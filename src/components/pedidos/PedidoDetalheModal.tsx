@@ -244,6 +244,12 @@ export function PedidoDetalheModal({
                   <div className="flex items-start justify-between">
                     <p className="font-medium text-gray-900">
                       {item.quantidade}x {item.nomeProdutoSnapshot}
+                      {item.nomeVarianteSnapshot && (
+                        <span className="text-gray-600">
+                          {" "}
+                          — {item.nomeVarianteSnapshot}
+                        </span>
+                      )}
                     </p>
                     <p className="text-sm font-semibold text-gray-700">
                       {formatBRL(item.subtotal)}
@@ -265,11 +271,6 @@ export function PedidoDetalheModal({
                         </p>
                       )}
                     </div>
-                  )}
-                  {item.obs && (
-                    <p className="mt-1 text-xs italic text-gray-600">
-                      Obs: {item.obs}
-                    </p>
                   )}
                 </div>
               ))}

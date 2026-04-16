@@ -10,7 +10,7 @@ import { ProdutoModal } from "@/components/cardapio/ProdutoModal";
 import { CategoriaModal } from "@/components/cardapio/CategoriaModal";
 import { IngredienteModal } from "@/components/cardapio/IngredienteModal";
 import { api } from "@/lib/api";
-import { formatBRL } from "@/lib/format";
+import { formatBRL, resolveImageUrl } from "@/lib/format";
 import { useAuthStore } from "@/store/authStore";
 import { useToastStore } from "@/store/toastStore";
 import type { Categoria, Ingrediente, Produto } from "@/types";
@@ -155,7 +155,7 @@ function CardapioContent() {
                             {p.fotoUrl ? (
                               // eslint-disable-next-line @next/next/no-img-element
                               <img
-                                src={p.fotoUrl}
+                                src={resolveImageUrl(p.fotoUrl) ?? ""}
                                 alt={p.nome}
                                 className="h-10 w-10 rounded object-cover"
                               />

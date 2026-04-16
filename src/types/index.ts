@@ -9,6 +9,8 @@ export type StatusPedido =
 
 export type TipoPagamento = "PIX" | "DINHEIRO" | "CARTAO";
 
+export type TipoCategoria = "LANCHE" | "BEBIDA" | "OUTRO";
+
 export interface Funcionario {
   id: string;
   nome: string;
@@ -34,6 +36,7 @@ export interface Categoria {
   nome: string;
   ordem: number;
   ativo: boolean;
+  tipo: TipoCategoria;
   criadoEm?: string;
   atualizadoEm?: string;
 }
@@ -44,6 +47,17 @@ export interface Ingrediente {
   precoAdicional: string;
   removivel: boolean;
   ativo: boolean;
+  criadoEm?: string;
+  atualizadoEm?: string;
+}
+
+export interface VarianteProduto {
+  id: string;
+  produtoId?: string;
+  nome: string;
+  preco: string;
+  disponivel: boolean;
+  ordem: number;
   criadoEm?: string;
   atualizadoEm?: string;
 }
@@ -59,6 +73,7 @@ export interface Produto {
   categoriaId: string;
   categoria?: Categoria;
   ingredientes?: Ingrediente[];
+  variantes?: VarianteProduto[];
   criadoEm?: string;
   atualizadoEm?: string;
 }
@@ -99,10 +114,11 @@ export interface ItemPedido {
   pedidoId: string;
   produtoId: string;
   nomeProdutoSnapshot: string;
+  varianteId: string | null;
+  nomeVarianteSnapshot: string | null;
   precoUnitario: string;
   quantidade: number;
   subtotal: string;
-  obs: string | null;
   personalizacoes: ItemPedidoPersonalizacoes | null;
   produto?: Produto;
 }
@@ -159,6 +175,9 @@ export interface FechamentoResponse {
   fechadoEm: string | null;
   obs: string | null;
   isFechado: boolean;
+  motivoReabertura: string | null;
+  reabertoEm: string | null;
+  reabertoPor: { id: string; nome: string } | null;
 }
 
 export interface ResumoPeriodo {

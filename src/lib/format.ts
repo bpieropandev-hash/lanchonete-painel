@@ -1,3 +1,18 @@
+/**
+ * Resolve a foto URL: se for relativa (começa com '/') prefixa com a
+ * base da API sem o sufixo /api/v1, senão devolve como está.
+ */
+export function resolveImageUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  if (url.startsWith("http")) return url;
+  const apiBase =
+    (typeof process !== "undefined" &&
+      process.env.NEXT_PUBLIC_API_URL) ||
+    "http://localhost:3000/api/v1";
+  const origin = apiBase.replace(/\/api\/v1\/?$/, "").replace(/\/$/, "");
+  return `${origin}${url}`;
+}
+
 export function formatBRL(value: number | string): string {
   const num = typeof value === "string" ? parseFloat(value) : value;
   if (isNaN(num)) return "R$ 0,00";

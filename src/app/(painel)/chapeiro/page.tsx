@@ -112,7 +112,7 @@ function ChapeiroPageContent() {
       const msg =
         axios.isAxiosError(err) && err.response?.data
           ? (err.response.data as { message?: string }).message ||
-            "Erro ao atualizar"
+          "Erro ao atualizar"
           : "Erro ao atualizar";
       showToast(msg, "error");
     } finally {
@@ -183,11 +183,10 @@ function ChapeiroPageContent() {
               return (
                 <div
                   key={pedido.id}
-                  className={`rounded-2xl border-4 p-4 shadow-xl transition-all ${
-                    isNovo
+                  className={`rounded-2xl border-4 p-4 shadow-xl transition-all ${isNovo
                       ? "animate-pulse-slow border-yellow-500 bg-yellow-500/10"
                       : "border-blue-500 bg-blue-500/10"
-                  }`}
+                    }`}
                 >
                   <div className="mb-3 flex items-start justify-between">
                     <div>
@@ -200,11 +199,10 @@ function ChapeiroPageContent() {
                       </p>
                     </div>
                     <span
-                      className={`rounded-full px-3 py-1 text-sm font-bold ${
-                        isNovo
+                      className={`rounded-full px-3 py-1 text-sm font-bold ${isNovo
                           ? "bg-yellow-500 text-zinc-900"
                           : "bg-blue-500 text-white"
-                      }`}
+                        }`}
                     >
                       {statusLabel(pedido.status)}
                     </span>
@@ -237,11 +235,6 @@ function ChapeiroPageContent() {
                             )}
                           </div>
                         )}
-                        {item.obs && (
-                          <p className="ml-6 text-base italic text-yellow-300">
-                            ⚠ {item.obs}
-                          </p>
-                        )}
                       </div>
                     ))}
                   </div>
@@ -261,11 +254,10 @@ function ChapeiroPageContent() {
                   <button
                     onClick={() => handleAvancar(pedido)}
                     disabled={acting === pedido.id}
-                    className={`flex w-full items-center justify-center gap-2 rounded-xl py-4 text-xl font-bold transition-colors disabled:opacity-60 ${
-                      isNovo
+                    className={`flex w-full items-center justify-center gap-2 rounded-xl py-4 text-xl font-bold transition-colors disabled:opacity-60 ${isNovo
                         ? "bg-yellow-500 text-zinc-900 hover:bg-yellow-400"
                         : "bg-blue-500 text-white hover:bg-blue-400"
-                    }`}
+                      }`}
                   >
                     {isNovo ? (
                       <>

@@ -29,11 +29,28 @@ function PedidosPageContent() {
   const loadPedidos = useCallback(async () => {
     try {
       const today = new Date().toISOString().split("T")[0];
-      const { data } = await api.get("/admin/pedidos", {
-        params: { dataInicio: today, limite: 200 },
-      });
-      const list: Pedido[] = Array.isArray(data) ? data : data?.data ?? [];
-      setPedidos(list.filter((p) => p.status !== "CANCELADO"));
+      const limite = 50;
+      let pagina = 1;
+      let totalPaginas = 1;
+      const acumulado: Pedido[] = [];
+
+      do {
+        const { data } = await api.get("/admin/pedidos", {
+          params: { dataInicio: today, limite, pagina },
+        });
+        const body = data as
+          | Pedido[]
+          | { data: Pedido[]; totalPaginas?: number };
+        if (Array.isArray(body)) {
+          acumulado.push(...body);
+          break;
+        }
+        acumulado.push(...(body.data ?? []));
+        totalPaginas = body.totalPaginas ?? 1;
+        pagina += 1;
+      } while (pagina <= totalPaginas);
+
+      setPedidos(acumulado.filter((p) => p.status !== "CANCELADO"));
     } catch {
       showToast("Erro ao carregar pedidos", "error");
     } finally {

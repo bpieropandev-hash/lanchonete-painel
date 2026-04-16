@@ -10,7 +10,13 @@ export const produtoSchema = z.object({
   nome: z.string().min(2, "Mínimo 2 caracteres"),
   descricao: z.string().min(5, "Mínimo 5 caracteres"),
   precoBase: z.number().positive("Preço deve ser positivo"),
-  fotoUrl: z.string().url("URL inválida").or(z.literal("")).optional(),
+  fotoUrl: z
+    .string()
+    .refine(
+      (v) => !v || v.startsWith("/") || /^https?:\/\//.test(v),
+      "Informe uma URL válida ou faça upload de uma imagem"
+    )
+    .optional(),
   categoriaId: z.string().min(1, "Selecione uma categoria"),
   ordem: z.number().int().nonnegative(),
 });
@@ -19,6 +25,7 @@ export type ProdutoInput = z.infer<typeof produtoSchema>;
 export const categoriaSchema = z.object({
   nome: z.string().min(2, "Mínimo 2 caracteres"),
   ordem: z.number().int().nonnegative(),
+  tipo: z.enum(["LANCHE", "BEBIDA", "OUTRO"]),
 });
 export type CategoriaInput = z.infer<typeof categoriaSchema>;
 
@@ -68,6 +75,14 @@ export const fecharCaixaSchema = z.object({
   obs: z.string().optional(),
 });
 export type FecharCaixaInput = z.infer<typeof fecharCaixaSchema>;
+
+export const reabrirCaixaSchema = z.object({
+  motivo: z
+    .string()
+    .min(3, "Informe ao menos 3 caracteres")
+    .max(500, "Máximo 500 caracteres"),
+});
+export type ReabrirCaixaInput = z.infer<typeof reabrirCaixaSchema>;
 
 export const periodoSchema = z.object({
   dataInicio: z.string().min(1, "Data inicial obrigatória"),

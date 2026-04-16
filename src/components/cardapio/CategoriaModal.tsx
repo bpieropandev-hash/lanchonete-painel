@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
+import { Input, Select } from "@/components/ui/Input";
 import { categoriaSchema, type CategoriaInput } from "@/lib/validators";
 import { api } from "@/lib/api";
 import { useToastStore } from "@/store/toastStore";
@@ -34,7 +34,7 @@ export function CategoriaModal({
     formState: { errors },
   } = useForm<CategoriaInput>({
     resolver: zodResolver(categoriaSchema),
-    defaultValues: { nome: "", ordem: 0 },
+    defaultValues: { nome: "", ordem: 0, tipo: "LANCHE" },
   });
 
   useEffect(() => {
@@ -42,6 +42,7 @@ export function CategoriaModal({
       reset({
         nome: categoria?.nome || "",
         ordem: categoria?.ordem || 0,
+        tipo: categoria?.tipo || "LANCHE",
       });
     }
   }, [open, categoria, reset]);
@@ -92,12 +93,26 @@ export function CategoriaModal({
           {...register("nome")}
           error={errors.nome?.message}
         />
-        <Input
-          label="Ordem"
-          type="number"
-          {...register("ordem", { valueAsNumber: true })}
-          error={errors.ordem?.message}
-        />
+        <div className="grid grid-cols-2 gap-3">
+          <Select
+            label="Tipo"
+            {...register("tipo")}
+            error={errors.tipo?.message}
+          >
+            <option value="LANCHE">Lanche</option>
+            <option value="BEBIDA">Bebida</option>
+            <option value="OUTRO">Outro</option>
+          </Select>
+          <Input
+            label="Ordem"
+            type="number"
+            {...register("ordem", { valueAsNumber: true })}
+            error={errors.ordem?.message}
+          />
+        </div>
+        <p className="text-xs text-gray-500">
+          Bebidas não exibem a seção de ingredientes na personalização.
+        </p>
       </form>
     </Modal>
   );

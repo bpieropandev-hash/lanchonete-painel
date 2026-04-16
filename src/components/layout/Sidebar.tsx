@@ -16,6 +16,7 @@ import { useAuthStore } from "@/store/authStore";
 import { useNotificacaoStore } from "@/store/notificacaoStore";
 import type { PerfilUsuario } from "@/types";
 import { perfilLabel } from "@/lib/format";
+import { getDefaultRoute } from "@/lib/painel-routes";
 
 interface NavItem {
   href: string;
@@ -95,7 +96,10 @@ export function Sidebar({ open, onClose }: SidebarProps) {
         }`}
       >
         <div className="flex items-center justify-between border-b border-gray-200 px-5 py-4">
-          <Link href="/pedidos" className="flex items-center gap-2">
+          <Link
+            href={getDefaultRoute(funcionario.perfil)}
+            className="flex items-center gap-2"
+          >
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary-500 text-white">
               <ChefHat size={20} />
             </div>

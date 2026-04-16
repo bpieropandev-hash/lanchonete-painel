@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import {
   DollarSign,
   Lock,
+  Unlock,
   TrendingUp,
   CreditCard,
   Banknote,
@@ -13,6 +14,7 @@ import {
   Calendar,
   Search,
   Trophy,
+  AlertTriangle,
 } from "lucide-react";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { PainelShell } from "@/components/layout/PainelShell";
@@ -24,8 +26,10 @@ import { api } from "@/lib/api";
 import { formatBRL, formatData, formatDataHora } from "@/lib/format";
 import {
   fecharCaixaSchema,
+  reabrirCaixaSchema,
   periodoSchema,
   type FecharCaixaInput,
+  type ReabrirCaixaInput,
   type PeriodoInput,
 } from "@/lib/validators";
 import { useAuthStore } from "@/store/authStore";
@@ -63,12 +67,18 @@ function CaixaContent() {
   const [loadingRelatorio, setLoadingRelatorio] = useState(false);
   const [fecharOpen, setFecharOpen] = useState(false);
   const [fechando, setFechando] = useState(false);
+  const [reabrirOpen, setReabrirOpen] = useState(false);
+  const [reabrindo, setReabrindo] = useState(false);
   const { funcionario } = useAuthStore();
   const showToast = useToastStore((s) => s.show);
   const isAdmin = funcionario?.perfil === "ADMIN";
 
   const fecharForm = useForm<FecharCaixaInput>({
     resolver: zodResolver(fecharCaixaSchema),
+  });
+
+  const reabrirForm = useForm<ReabrirCaixaInput>({
+    resolver: zodResolver(reabrirCaixaSchema),
   });
 
   const periodoForm = useForm<PeriodoInput>({
@@ -102,6 +112,24 @@ function CaixaContent() {
       showToast("Erro ao fechar caixa", "error");
     } finally {
       setFechando(false);
+    }
+  };
+
+  const handleReabrir = async (input: ReabrirCaixaInput) => {
+    if (!hoje?.id) return;
+    setReabrindo(true);
+    try {
+      await api.patch(`/admin/caixa/${hoje.id}/reabrir`, {
+        motivo: input.motivo,
+      });
+      showToast("Caixa reaberto. Você pode fechar novamente depois.", "success");
+      setReabrirOpen(false);
+      reabrirForm.reset();
+      loadHoje();
+    } catch {
+      showToast("Erro ao reabrir caixa", "error");
+    } finally {
+      setReabrindo(false);
     }
   };
 
@@ -143,15 +171,43 @@ function CaixaContent() {
               leftIcon={<Lock size={16} />}
               onClick={() => setFecharOpen(true)}
             >
-              Fechar Caixa
+              {hoje.motivoReabertura ? "Refechar Caixa" : "Fechar Caixa"}
             </Button>
           )}
           {hoje?.isFechado && (
-            <span className="rounded-full bg-red-100 px-3 py-1 text-xs font-bold text-red-700">
-              Fechado {hoje.fechadoEm ? `em ${formatDataHora(hoje.fechadoEm)}` : ""}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="rounded-full bg-red-100 px-3 py-1 text-xs font-bold text-red-700">
+                Fechado {hoje.fechadoEm ? `em ${formatDataHora(hoje.fechadoEm)}` : ""}
+              </span>
+              {isAdmin && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  leftIcon={<Unlock size={14} />}
+                  onClick={() => setReabrirOpen(true)}
+                >
+                  Reabrir
+                </Button>
+              )}
+            </div>
           )}
         </div>
+
+        {hoje?.motivoReabertura && (
+          <div className="mb-3 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+            <AlertTriangle size={16} className="mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="font-semibold">
+                Caixa foi reaberto
+                {hoje.reabertoPor ? ` por ${hoje.reabertoPor.nome}` : ""}
+                {hoje.reabertoEm ? ` em ${formatDataHora(hoje.reabertoEm)}` : ""}
+              </p>
+              <p className="text-xs">
+                <strong>Motivo:</strong> {hoje.motivoReabertura}
+              </p>
+            </div>
+          </div>
+        )}
 
         {hoje ? (
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
@@ -374,6 +430,49 @@ function CaixaContent() {
           rows={3}
           placeholder="Ex: caixa conferido com R$ X..."
           {...fecharForm.register("obs")}
+        />
+      </Modal>
+
+      {/* Modal Reabrir Caixa */}
+      <Modal
+        open={reabrirOpen}
+        onClose={() => setReabrirOpen(false)}
+        title="Reabrir Caixa"
+        size="sm"
+        footer={
+          <div className="flex gap-2">
+            <Button
+              variant="secondary"
+              onClick={() => setReabrirOpen(false)}
+              disabled={reabrindo}
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="primary"
+              onClick={reabrirForm.handleSubmit(handleReabrir)}
+              loading={reabrindo}
+              fullWidth
+              leftIcon={<Unlock size={16} />}
+            >
+              Confirmar Reabertura
+            </Button>
+          </div>
+        }
+      >
+        <div className="mb-4 flex items-start gap-2 rounded-lg bg-amber-50 p-3 text-xs text-amber-900">
+          <AlertTriangle size={16} className="mt-0.5 flex-shrink-0" />
+          <p>
+            O motivo da reabertura fica registrado no histórico do caixa.
+            Use com cautela.
+          </p>
+        </div>
+        <Textarea
+          label="Motivo da reabertura *"
+          rows={3}
+          placeholder="Ex: lançamento de pedido atrasado, correção de valor..."
+          {...reabrirForm.register("motivo")}
+          error={reabrirForm.formState.errors.motivo?.message}
         />
       </Modal>
     </div>

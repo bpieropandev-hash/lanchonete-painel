@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
 import { FullPageSpinner } from "@/components/ui/LoadingSpinner";
-import { getDefaultRoute } from "@/components/auth/ProtectedRoute";
+import { getDefaultRoute } from "@/lib/painel-routes";
 
 export default function HomePage() {
   const router = useRouter();

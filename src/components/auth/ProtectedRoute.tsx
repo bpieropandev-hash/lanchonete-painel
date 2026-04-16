@@ -5,17 +5,9 @@ import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
 import { FullPageSpinner } from "@/components/ui/LoadingSpinner";
 import type { PerfilUsuario } from "@/types";
+import { getDefaultRoute } from "@/lib/painel-routes";
 
-export function getDefaultRoute(perfil: PerfilUsuario): string {
-  switch (perfil) {
-    case "CHAPEIRO":
-      return "/chapeiro";
-    case "ENTREGADOR":
-      return "/chapeiro";
-    default:
-      return "/pedidos";
-  }
-}
+export { getDefaultRoute } from "@/lib/painel-routes";
 
 interface ProtectedRouteProps {
   children: ReactNode;
