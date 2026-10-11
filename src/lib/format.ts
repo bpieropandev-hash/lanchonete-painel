@@ -47,6 +47,12 @@ export function formatHora(date: string | Date): string {
 }
 
 export function formatData(date: string | Date): string {
+  // "YYYY-MM-DD" puro (datas do caixa): new Date() interpretaria como meia-noite
+  // UTC e, no Brasil, mostraria o dia anterior.
+  if (typeof date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    const [ano, mes, dia] = date.split("-");
+    return `${dia}/${mes}/${ano}`;
+  }
   const d = typeof date === "string" ? new Date(date) : date;
   return d.toLocaleDateString("pt-BR");
 }
@@ -72,6 +78,7 @@ export function statusLabel(status: string): string {
   const labels: Record<string, string> = {
     NOVO: "Novo",
     PREPARANDO: "Preparando",
+    PRONTO: "Pronto p/ retirada",
     SAIU_ENTREGA: "Saiu para entrega",
     ENTREGUE: "Entregue",
     CANCELADO: "Cancelado",

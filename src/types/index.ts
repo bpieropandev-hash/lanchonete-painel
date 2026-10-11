@@ -3,11 +3,46 @@ export type PerfilUsuario = "ADMIN" | "ATENDENTE" | "CHAPEIRO" | "ENTREGADOR";
 export type StatusPedido =
   | "NOVO"
   | "PREPARANDO"
+  | "PRONTO"
   | "SAIU_ENTREGA"
   | "ENTREGUE"
   | "CANCELADO";
 
 export type TipoPagamento = "PIX" | "DINHEIRO" | "CARTAO";
+
+export type TipoEntrega = "ENTREGA" | "RETIRADA";
+
+export type ModoFuncionamento = "AUTO" | "ABERTA" | "FECHADA";
+
+export interface FaixaHorario {
+  /** 0 = domingo ... 6 = sábado */
+  dia: number;
+  abre: string;
+  fecha: string;
+}
+
+export interface BairroEntrega {
+  id: string;
+  nome: string;
+  taxa: number | string;
+  ativo?: boolean;
+}
+
+export interface ConfiguracaoLoja {
+  aberta: boolean;
+  modoFuncionamento: ModoFuncionamento;
+  mensagemFechada: string | null;
+  proximaAbertura: string | null;
+  horarios: FaixaHorario[];
+  pedidoMinimo: number;
+  taxaEntregaPadrao: number;
+  entregaApenasBairrosCadastrados: boolean;
+  aceitaEntrega: boolean;
+  aceitaRetirada: boolean;
+  tempoEstimadoEntregaMin: number;
+  tempoEstimadoRetiradaMin: number;
+  bairros: BairroEntrega[];
+}
 
 export type TipoCategoria = "LANCHE" | "BEBIDA" | "OUTRO";
 
@@ -72,7 +107,13 @@ export interface Produto {
   ordem: number;
   categoriaId: string;
   categoria?: Categoria;
-  ingredientes?: Ingrediente[];
+  /** padrao = vem no lanche (cliente pode remover); !padrao = extra pago */
+  produtoIngredientes?: {
+    id: string;
+    ingredienteId: string;
+    padrao: boolean;
+    ingrediente?: Ingrediente;
+  }[];
   variantes?: VarianteProduto[];
   criadoEm?: string;
   atualizadoEm?: string;
@@ -106,7 +147,8 @@ export interface EnderecoSnapshot {
 
 export interface ItemPedidoPersonalizacoes {
   removidos: string[];
-  adicionados: { nome: string; preco: string }[];
+  adicionados: { ingredienteId?: string; nome: string; preco: string | number }[];
+  observacao?: string | null;
 }
 
 export interface ItemPedido {
@@ -129,12 +171,14 @@ export interface Pedido {
   clienteId: string | null;
   cliente?: Cliente | null;
   status: StatusPedido;
+  tipoEntrega: TipoEntrega;
   pagamento: TipoPagamento;
+  trocoPara: string | null;
   subtotal: string;
   taxaEntrega: string;
   total: string;
   obs: string | null;
-  enderecoEntregaSnapshot: EnderecoSnapshot;
+  enderecoEntregaSnapshot: EnderecoSnapshot | null;
   motivoCancelamento: string | null;
   entregadorId: string | null;
   entregador?: Entregador | null;
@@ -171,6 +215,10 @@ export interface FechamentoResponse {
   totalPedidos: number;
   ticketMedio: number;
   pedidosCancelados: number;
+  pedidosEmAndamento: number;
+  fundoTroco: number;
+  dinheiroConferido: number | null;
+  diferencaDinheiro: number | null;
   fechadoPor: { id: string; nome: string } | null;
   fechadoEm: string | null;
   obs: string | null;

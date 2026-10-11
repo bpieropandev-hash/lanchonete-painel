@@ -1,36 +1,33 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Lanchonete: painel da loja
 
-## Getting Started
+Painel interno (Next.js 14) para atendente, chapeiro e administrador. Consome a `lanchonete-api`.
 
-First, run the development server:
+## Rodando localmente
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cp .env.example .env
+npm install
+npm run dev              # http://localhost:3002
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+O primeiro acesso usa o admin criado pelo `npm run seed` da API.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Telas
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Tela | Quem usa | O que faz |
+|---|---|---|
+| **Pedidos** | admin, atendente | Quadro do expediente atual em tempo real, detalhe, avanço de status, cancelamento, link de WhatsApp e **impressão da comanda** |
+| **Chapeiro** | admin, chapeiro | Fila da cozinha em letra grande, som de pedido novo, aviso de cancelamento |
+| **Loja** | admin (atendente só abre/fecha) | Abrir/fechar na hora, horários por dia, pedido mínimo, taxa padrão, **taxa por bairro**, entrega/retirada |
+| **Cardápio** | admin | Produtos, variantes, ingredientes que vêm no lanche e **adicionais pagos** |
+| **Caixa** | admin, atendente | Totais do expediente, fechamento com fundo de troco e conferência da gaveta |
 
-## Learn More
+## Operação
 
-To learn more about Next.js, take a look at the following resources:
+- **Tempo real:** se a conexão cair, o painel avisa e, ao reconectar, busca tudo de novo. A tela do chapeiro mostra "Sem conexão" e recarrega a fila a cada 20 s enquanto isso.
+- **Comanda:** o botão "Imprimir" abre uma comanda de 80 mm. Deixe a impressora térmica como padrão no computador do caixa. Para imprimir sem a caixa de diálogo, abra o Chrome com `--kiosk-printing`. O navegador precisa permitir pop-ups do painel.
+- **Expediente:** a tela de pedidos e o caixa usam o "dia operacional" da API. O pedido da madrugada conta na noite anterior.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Deploy
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+`Dockerfile` com `output: "standalone"`. As variáveis `NEXT_PUBLIC_*` vão como `--build-arg` no build.

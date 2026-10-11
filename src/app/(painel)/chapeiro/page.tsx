@@ -1,7 +1,17 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
-import { ChefHat, Bike, LogOut, Volume2, VolumeX, Clock } from "lucide-react";
+import {
+  ChefHat,
+  Bike,
+  LogOut,
+  Volume2,
+  VolumeX,
+  Clock,
+  Bell,
+  Store,
+  WifiOff,
+} from "lucide-react";
 import axios from "axios";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { api } from "@/lib/api";
@@ -20,6 +30,7 @@ function ChapeiroPageContent() {
   const showToast = useToastStore((s) => s.show);
   const logout = useAuthStore((s) => s.logout);
   const audioEnabledRef = useRef(false);
+  const [conectado, setConectado] = useState(true);
 
   const loadPedidos = useCallback(async () => {
     try {
@@ -42,11 +53,23 @@ function ChapeiroPageContent() {
   useEffect(() => {
     const socket = getPedidosSocket();
 
+    // A cada (re)conexão: entra na sala e recarrega a fila. Sem isso, um
+    // pedido feito enquanto o Wi-Fi da cozinha caiu nunca aparecia.
+    let primeiraConexao = true;
     const onConnect = () => {
-      socket.emit("entrar:chapeiro");
+      setConectado(true);
+      socket.emit("entrar:chapeiro", (resp?: { ok: boolean; erro?: string }) => {
+        if (resp && !resp.ok) showToast(`Tempo real: ${resp.erro}`, "error");
+      });
+      if (!primeiraConexao) loadPedidos();
+      primeiraConexao = false;
+    };
+    const onDisconnect = (motivo: string) => {
+      if (motivo !== "io client disconnect") setConectado(false);
     };
     if (socket.connected) onConnect();
     socket.on("connect", onConnect);
+    socket.on("disconnect", onDisconnect);
 
     const onNovo = (pedido: Pedido) => {
       setPedidos((prev) => {
@@ -63,8 +86,13 @@ function ChapeiroPageContent() {
       numero: number;
       status: StatusPedido;
     }) => {
-      if (payload.status === "SAIU_ENTREGA" || payload.status === "CANCELADO") {
+      // Saiu da cozinha (pronto, saiu, cancelado...): tira da fila.
+      if (payload.status !== "NOVO" && payload.status !== "PREPARANDO") {
         setPedidos((prev) => prev.filter((p) => p.id !== payload.id));
+        if (payload.status === "CANCELADO") {
+          showToast(`Pedido #${payload.numero} foi CANCELADO`, "error");
+          if (audioEnabledRef.current) playNotification();
+        }
         return;
       }
       setPedidos((prev) =>
@@ -79,11 +107,19 @@ function ChapeiroPageContent() {
 
     return () => {
       socket.off("connect", onConnect);
+      socket.off("disconnect", onDisconnect);
       socket.off("pedido:novo", onNovo);
       socket.off("pedido:status", onStatus);
       disconnectPedidosSocket();
     };
-  }, []);
+  }, [loadPedidos, showToast]);
+
+  // Plano B: se o tempo real cair, recarrega a fila a cada 20s.
+  useEffect(() => {
+    if (conectado) return;
+    const timer = setInterval(loadPedidos, 20_000);
+    return () => clearInterval(timer);
+  }, [conectado, loadPedidos]);
 
   const enableAudio = () => {
     unlockAudio();
@@ -95,13 +131,17 @@ function ChapeiroPageContent() {
 
   const handleAvancar = async (pedido: Pedido) => {
     const next: StatusPedido =
-      pedido.status === "NOVO" ? "PREPARANDO" : "SAIU_ENTREGA";
+      pedido.status === "NOVO"
+        ? "PREPARANDO"
+        : pedido.tipoEntrega === "RETIRADA"
+          ? "PRONTO"
+          : "SAIU_ENTREGA";
     setActing(pedido.id);
     try {
       await api.patch<Pedido>(`/admin/pedidos/${pedido.id}/status`, {
         status: next,
       });
-      if (next === "SAIU_ENTREGA") {
+      if (next !== "PREPARANDO") {
         setPedidos((prev) => prev.filter((p) => p.id !== pedido.id));
       } else {
         setPedidos((prev) =>
@@ -115,6 +155,8 @@ function ChapeiroPageContent() {
           "Erro ao atualizar"
           : "Erro ao atualizar";
       showToast(msg, "error");
+      // Provavelmente o pedido mudou em outra tela (ex.: cancelado)
+      loadPedidos();
     } finally {
       setActing(null);
     }
@@ -135,6 +177,12 @@ function ChapeiroPageContent() {
           <h1 className="text-xl font-bold sm:text-2xl">Tela do Chapeiro</h1>
         </div>
         <div className="flex items-center gap-2">
+          {!conectado && (
+            <span className="flex items-center gap-2 rounded-lg bg-red-600 px-3 py-2 text-sm font-bold text-white">
+              <WifiOff size={18} />
+              <span className="hidden sm:inline">Sem conexão, atualizando a cada 20s</span>
+            </span>
+          )}
           {!audioEnabled ? (
             <button
               onClick={enableAudio}
@@ -197,6 +245,12 @@ function ChapeiroPageContent() {
                         <Clock size={16} />
                         {tempoDesde(pedido.criadoEm)}
                       </p>
+                      {pedido.tipoEntrega === "RETIRADA" && (
+                        <p className="mt-1 flex items-center gap-1 text-base font-bold text-sky-300">
+                          <Store size={16} />
+                          RETIRADA
+                        </p>
+                      )}
                     </div>
                     <span
                       className={`rounded-full px-3 py-1 text-sm font-bold ${isNovo
@@ -216,6 +270,11 @@ function ChapeiroPageContent() {
                             {item.quantidade}x
                           </span>{" "}
                           {item.nomeProdutoSnapshot}
+                          {item.nomeVarianteSnapshot && (
+                            <span className="text-primary-300">
+                              {" "}— {item.nomeVarianteSnapshot}
+                            </span>
+                          )}
                         </p>
                         {item.personalizacoes && (
                           <div className="ml-6 text-base">
@@ -231,6 +290,11 @@ function ChapeiroPageContent() {
                                 {item.personalizacoes.adicionados
                                   .map((a) => a.nome)
                                   .join(", ")}
+                              </p>
+                            )}
+                            {item.personalizacoes.observacao && (
+                              <p className="font-semibold text-yellow-300">
+                                ➜ {item.personalizacoes.observacao}
                               </p>
                             )}
                           </div>
@@ -263,6 +327,11 @@ function ChapeiroPageContent() {
                       <>
                         <ChefHat size={24} />
                         {acting === pedido.id ? "..." : "Iniciar Preparo"}
+                      </>
+                    ) : pedido.tipoEntrega === "RETIRADA" ? (
+                      <>
+                        <Bell size={24} />
+                        {acting === pedido.id ? "..." : "Pronto p/ retirada"}
                       </>
                     ) : (
                       <>

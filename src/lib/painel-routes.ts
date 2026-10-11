@@ -18,6 +18,7 @@ export function getDefaultRoute(perfil: PerfilUsuario): string {
 const PREFIXOS_POR_PERFIL: Record<PerfilUsuario, string[]> = {
   ADMIN: [
     "/pedidos",
+    "/loja",
     "/chapeiro",
     "/cardapio",
     "/entregadores",
@@ -25,7 +26,7 @@ const PREFIXOS_POR_PERFIL: Record<PerfilUsuario, string[]> = {
     "/usuarios",
     "/entrega",
   ],
-  ATENDENTE: ["/pedidos", "/cardapio", "/entregadores", "/caixa"],
+  ATENDENTE: ["/pedidos", "/loja", "/cardapio", "/entregadores", "/caixa"],
   CHAPEIRO: ["/chapeiro"],
   ENTREGADOR: ["/entrega"],
 };

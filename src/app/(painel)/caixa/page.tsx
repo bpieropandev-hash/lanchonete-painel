@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import axios from "axios";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -100,16 +101,41 @@ function CaixaContent() {
     loadHoje();
   }, [loadHoje]);
 
-  const handleFechar = async (input: FecharCaixaInput) => {
+  const paraNumero = (v?: string) =>
+    v && v.trim() ? Number(v.replace(",", ".")) : undefined;
+
+  const handleFechar = async (input: FecharCaixaInput, forcar = false) => {
     setFechando(true);
     try {
-      await api.post("/admin/caixa/fechar", { obs: input.obs || undefined });
-      showToast("Caixa fechado com sucesso", "success");
+      const { data } = await api.post<FechamentoResponse>("/admin/caixa/fechar", {
+        obs: input.obs || undefined,
+        fundoTroco: paraNumero(input.fundoTroco),
+        dinheiroConferido: paraNumero(input.dinheiroConferido),
+        ...(forcar && { forcar: true }),
+      });
+      const dif = data.diferencaDinheiro;
+      showToast(
+        dif && dif !== 0
+          ? `Caixa fechado. Diferença no dinheiro: ${formatBRL(dif)}`
+          : "Caixa fechado com sucesso",
+        dif && dif !== 0 ? "error" : "success"
+      );
       setFecharOpen(false);
       fecharForm.reset();
       loadHoje();
-    } catch {
-      showToast("Erro ao fechar caixa", "error");
+    } catch (err) {
+      const status = axios.isAxiosError(err) ? err.response?.status : undefined;
+      const msg = axios.isAxiosError(err)
+        ? (err.response?.data as { message?: string } | undefined)?.message
+        : undefined;
+      // 409 com pedidos em andamento: pergunta se quer fechar mesmo assim
+      if (status === 409 && msg?.includes("em andamento") && !forcar) {
+        if (window.confirm(`${msg}\n\nFechar mesmo assim?`)) {
+          return handleFechar(input, true);
+        }
+      } else {
+        showToast(msg || "Erro ao fechar caixa", "error");
+      }
     } finally {
       setFechando(false);
     }
@@ -163,7 +189,7 @@ function CaixaContent() {
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
           <h2 className="flex items-center gap-2 text-lg font-bold text-gray-900">
             <Calendar size={20} />
-            Caixa de Hoje
+            Caixa do expediente {hoje ? `(${formatData(hoje.data)})` : ""}
           </h2>
           {isAdmin && hoje && !hoje.isFechado && (
             <Button
@@ -206,6 +232,33 @@ function CaixaContent() {
                 <strong>Motivo:</strong> {hoje.motivoReabertura}
               </p>
             </div>
+          </div>
+        )}
+
+        {hoje && !hoje.isFechado && hoje.pedidosEmAndamento > 0 && (
+          <div className="mb-3 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-900">
+            {hoje.pedidosEmAndamento} pedido(s) ainda em andamento: só entram no total quando
+            forem entregues.
+          </div>
+        )}
+
+        {hoje?.isFechado && hoje.dinheiroConferido !== null && (
+          <div
+            className={`mb-3 rounded-lg border px-3 py-2 text-sm ${
+              hoje.diferencaDinheiro
+                ? "border-red-200 bg-red-50 text-red-900"
+                : "border-green-200 bg-green-50 text-green-900"
+            }`}
+          >
+            Gaveta: fundo {formatBRL(hoje.fundoTroco)} + vendas em dinheiro{" "}
+            {formatBRL(hoje.totalDinheiro)} = esperado{" "}
+            {formatBRL(hoje.fundoTroco + hoje.totalDinheiro)} · contado{" "}
+            {formatBRL(hoje.dinheiroConferido)} ·{" "}
+            <strong>
+              {hoje.diferencaDinheiro
+                ? `diferença ${formatBRL(hoje.diferencaDinheiro)}`
+                : "sem diferença"}
+            </strong>
           </div>
         )}
 
@@ -412,7 +465,7 @@ function CaixaContent() {
             </Button>
             <Button
               variant="danger"
-              onClick={fecharForm.handleSubmit(handleFechar)}
+              onClick={fecharForm.handleSubmit((input) => handleFechar(input))}
               loading={fechando}
               fullWidth
               leftIcon={<Lock size={16} />}
@@ -423,12 +476,36 @@ function CaixaContent() {
         }
       >
         <p className="mb-4 text-sm text-gray-600">
-          Após fechar, o caixa de hoje ficará bloqueado para alterações.
+          Após fechar, o caixa deste expediente ficará bloqueado para alterações.
         </p>
+        <div className="mb-3 grid grid-cols-2 gap-3">
+          <Input
+            label="Fundo de troco (R$)"
+            inputMode="decimal"
+            placeholder="0,00"
+            hint="Dinheiro na gaveta ao abrir"
+            {...fecharForm.register("fundoTroco")}
+            error={fecharForm.formState.errors.fundoTroco?.message}
+          />
+          <Input
+            label="Dinheiro contado (R$)"
+            inputMode="decimal"
+            placeholder="0,00"
+            hint="Total na gaveta agora"
+            {...fecharForm.register("dinheiroConferido")}
+            error={fecharForm.formState.errors.dinheiroConferido?.message}
+          />
+        </div>
+        {hoje && (
+          <p className="mb-3 text-xs text-gray-500">
+            Vendas em dinheiro no sistema: {formatBRL(hoje.totalDinheiro)}. A diferença
+            entre o contado e o esperado fica registrada.
+          </p>
+        )}
         <Textarea
           label="Observação (opcional)"
-          rows={3}
-          placeholder="Ex: caixa conferido com R$ X..."
+          rows={2}
+          placeholder="Ex: sangria de R$ 200 às 22h..."
           {...fecharForm.register("obs")}
         />
       </Modal>

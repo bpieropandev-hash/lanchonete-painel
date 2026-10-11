@@ -1,6 +1,6 @@
 "use client";
 
-import { Clock, MapPin, User as UserIcon, CreditCard } from "lucide-react";
+import { Clock, MapPin, User as UserIcon, CreditCard, Store } from "lucide-react";
 import type { Pedido } from "@/types";
 import { formatBRL, tempoDesde, tipoPagamentoLabel } from "@/lib/format";
 
@@ -42,6 +42,13 @@ export function PedidoCard({ pedido, onClick }: PedidoCardProps) {
         </p>
       )}
 
+      {pedido.tipoEntrega === "RETIRADA" && (
+        <p className="mb-1 flex items-center gap-1 text-xs font-semibold text-blue-700">
+          <Store size={12} />
+          Retirada no balcão
+        </p>
+      )}
+
       {endereco && (
         <p className="mb-1 flex items-start gap-1 text-xs text-gray-600">
           <MapPin size={12} className="mt-0.5 shrink-0" />
@@ -54,6 +61,9 @@ export function PedidoCard({ pedido, onClick }: PedidoCardProps) {
       <p className="flex items-center gap-1 text-xs text-gray-600">
         <CreditCard size={12} />
         {tipoPagamentoLabel(pedido.pagamento)}
+        {pedido.pagamento === "DINHEIRO" && pedido.trocoPara && (
+          <span> · troco p/ {formatBRL(pedido.trocoPara)}</span>
+        )}
       </p>
     </button>
   );
