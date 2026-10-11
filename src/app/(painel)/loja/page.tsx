@@ -262,6 +262,14 @@ function LojaContent() {
         <h2 className="mb-1 flex items-center gap-2 text-base font-bold text-gray-900">
           <Clock size={18} /> Horário de funcionamento
         </h2>
+        {form.horarios.length === 0 && (
+          <div className="mb-3 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+            <strong>Nenhum horário cadastrado.</strong>{" "}
+            {isAdmin
+              ? "Use “+ horário” em cada dia que a loja abre e clique em Salvar. Até lá, no modo “Seguir horário”, a loja fica fechada para pedidos."
+              : "Peça ao administrador para cadastrar. Até lá, a loja só abre pelo botão “Abrir agora”."}
+          </div>
+        )}
         <p className="mb-4 text-xs text-gray-500">
           Se o fechamento for antes da abertura (ex.: 18:00 às 01:00), a loja fica aberta até a
           madrugada do dia seguinte.

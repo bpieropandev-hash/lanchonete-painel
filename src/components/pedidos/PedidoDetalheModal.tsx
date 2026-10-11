@@ -7,7 +7,6 @@ import {
   Check,
   X as XIcon,
   ExternalLink,
-  Printer,
   Store,
   Bell,
 } from "lucide-react";
@@ -22,7 +21,6 @@ import {
   tipoPagamentoLabel,
 } from "@/lib/format";
 import { useToastStore } from "@/store/toastStore";
-import { imprimirComanda } from "@/lib/comanda";
 import type { Pedido, StatusPedido, TipoEntrega } from "@/types";
 import axios from "axios";
 
@@ -134,12 +132,6 @@ export function PedidoDetalheModal({
   };
 
   const action = pedido ? proximaAcao(pedido) : null;
-
-  const handleImprimir = () => {
-    if (pedido && !imprimirComanda(pedido)) {
-      showToast("Libere pop-ups deste site para imprimir a comanda", "error");
-    }
-  };
   const ActionIcon = action?.icon;
 
   return (
@@ -178,13 +170,6 @@ export function PedidoDetalheModal({
             </div>
           ) : (
             <div className="flex flex-col gap-2 sm:flex-row">
-              <Button
-                variant="secondary"
-                onClick={handleImprimir}
-                leftIcon={<Printer size={16} />}
-              >
-                Imprimir
-              </Button>
               <Button
                 variant="danger"
                 onClick={() => setShowCancel(true)}
