@@ -31,3 +31,5 @@ O primeiro acesso usa o admin criado pelo `npm run seed` da API.
 ## Deploy
 
 `Dockerfile` com `output: "standalone"`. As variáveis `NEXT_PUBLIC_*` vão como `--build-arg` no build.
+
+No Railway: veja o guia `DEPLOY-RAILWAY.md` no repositório `lanchonete-api`.
