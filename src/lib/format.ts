@@ -47,6 +47,12 @@ export function formatHora(date: string | Date): string {
 }
 
 export function formatData(date: string | Date): string {
+  // "YYYY-MM-DD" puro (datas do caixa): new Date() interpretaria como meia-noite
+  // UTC e, no Brasil, mostraria o dia anterior.
+  if (typeof date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    const [ano, mes, dia] = date.split("-");
+    return `${dia}/${mes}/${ano}`;
+  }
   const d = typeof date === "string" ? new Date(date) : date;
   return d.toLocaleDateString("pt-BR");
 }
@@ -70,8 +76,10 @@ export function tempoDesde(date: string | Date): string {
 
 export function statusLabel(status: string): string {
   const labels: Record<string, string> = {
+    AGUARDANDO_CONFIRMACAO: "Aguardando WhatsApp",
     NOVO: "Novo",
     PREPARANDO: "Preparando",
+    PRONTO: "Pronto p/ retirada",
     SAIU_ENTREGA: "Saiu para entrega",
     ENTREGUE: "Entregue",
     CANCELADO: "Cancelado",
@@ -96,4 +104,27 @@ export function perfilLabel(perfil: string): string {
     ENTREGADOR: "Entregador",
   };
   return labels[perfil] || perfil;
+}
+
+/** Nome e telefone do pedido: contato do convidado ou do cliente com conta. */
+export function contatoDoPedido(pedido: {
+  nomeContato?: string | null;
+  telefoneContato?: string | null;
+  cliente?: { nome: string; telefone: string } | null;
+}): { nome: string; telefone: string } {
+  return {
+    nome: pedido.nomeContato || pedido.cliente?.nome || "Cliente",
+    telefone: pedido.telefoneContato || pedido.cliente?.telefone || "",
+  };
+}
+
+/** Link para abrir conversa no WhatsApp com um telefone brasileiro. */
+export function linkWhatsApp(telefone: string, texto?: string): string {
+  const digitos = telefone.replace(/\D/g, "");
+  const numero = digitos.startsWith("55") ? digitos : `55${digitos}`;
+  return `https://wa.me/${numero}${texto ? `?text=${encodeURIComponent(texto)}` : ""}`;
+}
+
+export function horaCurta(iso: string): string {
+  return new Date(iso).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
 }

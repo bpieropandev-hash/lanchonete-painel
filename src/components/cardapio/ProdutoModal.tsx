@@ -49,6 +49,7 @@ export function ProdutoModal({
   const [submitting, setSubmitting] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [selectedIngredientes, setSelectedIngredientes] = useState<string[]>([]);
+  const [selectedExtras, setSelectedExtras] = useState<string[]>([]);
   const [variantes, setVariantes] = useState<VarianteRow[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const showToast = useToastStore((s) => s.show);
@@ -82,7 +83,15 @@ export function ProdutoModal({
         categoriaId: produto?.categoriaId || categorias[0]?.id || "",
         ordem: produto?.ordem || 0,
       });
-      setSelectedIngredientes(produto?.ingredientes?.map((i) => i.id) || []);
+      // A API devolve os vínculos em produtoIngredientes (antes lia-se um campo
+      // inexistente e salvar o produto apagava todos os ingredientes).
+      const vinculos = produto?.produtoIngredientes ?? [];
+      setSelectedIngredientes(
+        vinculos.filter((pi) => pi.padrao).map((pi) => pi.ingredienteId)
+      );
+      setSelectedExtras(
+        vinculos.filter((pi) => !pi.padrao).map((pi) => pi.ingredienteId)
+      );
       setVariantes(
         (produto?.variantes ?? [])
           .slice()
@@ -101,6 +110,12 @@ export function ProdutoModal({
 
   const toggleIngrediente = (id: string) => {
     setSelectedIngredientes((prev) =>
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+    );
+  };
+
+  const toggleExtra = (id: string) => {
+    setSelectedExtras((prev) =>
       prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
     );
   };
@@ -185,7 +200,8 @@ export function ProdutoModal({
         savedId = created.id;
       }
       await api.patch(`/admin/cardapio/produtos/${savedId}/ingredientes`, {
-        ingredientesIds: selectedIngredientes,
+        ingredientesIds: isBebida ? [] : selectedIngredientes,
+        ingredientesExtrasIds: isBebida ? [] : selectedExtras,
       });
       await api.patch(`/admin/cardapio/produtos/${savedId}/variantes`, {
         variantes: variantes.map((v, idx) => ({
@@ -340,8 +356,11 @@ export function ProdutoModal({
           </div>
         ) : (
           <div>
-            <p className="mb-2 text-sm font-medium text-gray-700">
-              Ingredientes ({selectedIngredientes.length} selecionados)
+            <p className="text-sm font-medium text-gray-700">
+              Vem no lanche ({selectedIngredientes.length})
+            </p>
+            <p className="mb-2 text-xs text-gray-500">
+              O cliente pode tirar os que estiverem marcados como removíveis.
             </p>
             <div className="grid max-h-48 grid-cols-1 gap-2 overflow-y-auto rounded-lg border border-gray-200 p-2 sm:grid-cols-2">
               {ingredientes.length === 0 && (
@@ -367,6 +386,36 @@ export function ProdutoModal({
                         +R$ {parseFloat(ing.precoAdicional).toFixed(2)}
                       </span>
                     )}
+                  </button>
+                );
+              })}
+            </div>
+
+            <p className="mt-4 text-sm font-medium text-gray-700">
+              Adicionais pagos ({selectedExtras.length})
+            </p>
+            <p className="mb-2 text-xs text-gray-500">
+              O cliente pode adicionar pagando o preço adicional do ingrediente.
+            </p>
+            <div className="grid max-h-48 grid-cols-1 gap-2 overflow-y-auto rounded-lg border border-gray-200 p-2 sm:grid-cols-2">
+              {ingredientes.map((ing) => {
+                const selected = selectedExtras.includes(ing.id);
+                const semPreco = parseFloat(ing.precoAdicional) <= 0;
+                return (
+                  <button
+                    type="button"
+                    key={ing.id}
+                    onClick={() => toggleExtra(ing.id)}
+                    title={semPreco ? "Ingrediente sem preço adicional: sairá de graça" : undefined}
+                    className={`rounded-lg border px-3 py-1.5 text-left text-sm transition-colors ${selected
+                      ? "border-green-500 bg-green-50 text-green-900"
+                      : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
+                      }`}
+                  >
+                    <span className="font-medium">{ing.nome}</span>
+                    <span className={`ml-2 text-xs ${semPreco ? "text-amber-600" : "text-gray-500"}`}>
+                      {semPreco ? "grátis" : `+R$ ${parseFloat(ing.precoAdicional).toFixed(2)}`}
+                    </span>
                   </button>
                 );
               })}

@@ -1,19 +1,31 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ChefHat, Bike, Check, X as XIcon, ExternalLink } from "lucide-react";
+import {
+  ChefHat,
+  Bike,
+  Check,
+  X as XIcon,
+  ExternalLink,
+  Store,
+  Bell,
+  MessageCircle,
+} from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
 import { Textarea } from "@/components/ui/Input";
 import { api } from "@/lib/api";
 import {
+  contatoDoPedido,
   formatBRL,
   formatDataHora,
+  formatTelefone,
+  linkWhatsApp,
   statusLabel,
   tipoPagamentoLabel,
 } from "@/lib/format";
 import { useToastStore } from "@/store/toastStore";
-import type { Pedido, StatusPedido } from "@/types";
+import type { Pedido, StatusPedido, TipoEntrega } from "@/types";
 import axios from "axios";
 
 interface PedidoDetalheModalProps {
@@ -23,11 +35,34 @@ interface PedidoDetalheModalProps {
   onUpdated: (pedido: Pedido) => void;
 }
 
-const nextStatus: Partial<Record<StatusPedido, { status: StatusPedido; label: string; icon: typeof ChefHat }>> = {
-  NOVO: { status: "PREPARANDO", label: "Iniciar Preparo", icon: ChefHat },
-  PREPARANDO: { status: "SAIU_ENTREGA", label: "Saiu para Entrega", icon: Bike },
-  SAIU_ENTREGA: { status: "ENTREGUE", label: "Marcar como Entregue", icon: Check },
+type Acao = { status: StatusPedido; label: string; icon: typeof ChefHat };
+
+const PROXIMO_STATUS: Record<TipoEntrega, Partial<Record<StatusPedido, Acao>>> = {
+  ENTREGA: {
+    AGUARDANDO_CONFIRMACAO: { status: "NOVO", label: "Confirmar (WhatsApp recebido)", icon: MessageCircle },
+    NOVO: { status: "PREPARANDO", label: "Iniciar Preparo", icon: ChefHat },
+    PREPARANDO: { status: "SAIU_ENTREGA", label: "Saiu para Entrega", icon: Bike },
+    SAIU_ENTREGA: { status: "ENTREGUE", label: "Marcar como Entregue", icon: Check },
+  },
+  RETIRADA: {
+    AGUARDANDO_CONFIRMACAO: { status: "NOVO", label: "Confirmar (WhatsApp recebido)", icon: MessageCircle },
+    NOVO: { status: "PREPARANDO", label: "Iniciar Preparo", icon: ChefHat },
+    PREPARANDO: { status: "PRONTO", label: "Pronto para Retirada", icon: Bell },
+    PRONTO: { status: "ENTREGUE", label: "Cliente Retirou", icon: Check },
+  },
 };
+
+const proximaAcao = (pedido: Pedido): Acao | undefined =>
+  PROXIMO_STATUS[pedido.tipoEntrega ?? "ENTREGA"][pedido.status];
+
+function mensagemErro(err: unknown, padrao: string): string {
+  if (axios.isAxiosError(err) && err.response?.data) {
+    const msg = (err.response.data as { message?: string | string[] }).message;
+    if (Array.isArray(msg)) return msg[0];
+    if (msg) return msg;
+  }
+  return padrao;
+}
 
 export function PedidoDetalheModal({
   open,
@@ -59,7 +94,7 @@ export function PedidoDetalheModal({
 
   const handleAvancar = async () => {
     if (!pedido) return;
-    const next = nextStatus[pedido.status];
+    const next = proximaAcao(pedido);
     if (!next) return;
     setActing(true);
     try {
@@ -74,12 +109,7 @@ export function PedidoDetalheModal({
       }
       onClose();
     } catch (err) {
-      const msg =
-        axios.isAxiosError(err) && err.response?.data
-          ? (err.response.data as { message?: string }).message ||
-            "Erro ao atualizar status"
-          : "Erro ao atualizar status";
-      showToast(msg, "error");
+      showToast(mensagemErro(err, "Erro ao atualizar status"), "error");
     } finally {
       setActing(false);
     }
@@ -100,14 +130,14 @@ export function PedidoDetalheModal({
       showToast("Pedido cancelado", "success");
       onUpdated(data);
       onClose();
-    } catch {
-      showToast("Erro ao cancelar pedido", "error");
+    } catch (err) {
+      showToast(mensagemErro(err, "Erro ao cancelar pedido"), "error");
     } finally {
       setActing(false);
     }
   };
 
-  const action = pedido ? nextStatus[pedido.status] : null;
+  const action = pedido ? proximaAcao(pedido) : null;
   const ActionIcon = action?.icon;
 
   return (
@@ -202,34 +232,76 @@ export function PedidoDetalheModal({
           {pedido.pagamento === "DINHEIRO" && (
             <div className="rounded-lg bg-yellow-50 px-3 py-2 text-xs text-yellow-900">
               <strong>Pagamento em dinheiro</strong>
+              {pedido.trocoPara ? (
+                <>
+                  {" "}· cliente paga com {formatBRL(pedido.trocoPara)} →{" "}
+                  <strong>
+                    levar {formatBRL(Number(pedido.trocoPara) - Number(pedido.total))} de troco
+                  </strong>
+                </>
+              ) : (
+                " · sem troco"
+              )}
             </div>
           )}
 
-          {pedido.cliente && (
-            <div>
-              <p className="mb-1 text-xs font-semibold uppercase text-gray-500">
-                Cliente
+          {pedido.status === "AGUARDANDO_CONFIRMACAO" && (
+            <div className="rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-3 text-sm text-emerald-950">
+              <p className="font-semibold">Aguardando confirmação pelo WhatsApp</p>
+              <p className="mt-1">
+                Confirme só se chegou mensagem do número{" "}
+                <strong>{formatTelefone(contatoDoPedido(pedido).telefone)}</strong> com o código{" "}
+                <strong className="font-mono text-base tracking-widest">
+                  {pedido.codigoConfirmacao}
+                </strong>
+                .
               </p>
-              <p className="font-medium text-gray-900">{pedido.cliente.nome}</p>
-              <p className="text-gray-600">{pedido.cliente.telefone}</p>
+              <p className="mt-1 text-xs">
+                Cancelado automaticamente se não confirmado em 30 min.
+              </p>
             </div>
           )}
 
           <div>
             <p className="mb-1 text-xs font-semibold uppercase text-gray-500">
-              Endereço de entrega
+              Cliente {!pedido.clienteId && "(sem cadastro)"}
             </p>
-            <p className="text-gray-700">
-              {pedido.enderecoEntregaSnapshot.logradouro},{" "}
-              {pedido.enderecoEntregaSnapshot.numero}
-              {pedido.enderecoEntregaSnapshot.complemento &&
-                ` - ${pedido.enderecoEntregaSnapshot.complemento}`}
-            </p>
-            <p className="text-gray-700">
-              {pedido.enderecoEntregaSnapshot.bairro},{" "}
-              {pedido.enderecoEntregaSnapshot.cidade}/{pedido.enderecoEntregaSnapshot.uf}
-            </p>
+            <p className="font-medium text-gray-900">{contatoDoPedido(pedido).nome}</p>
+            {contatoDoPedido(pedido).telefone && (
+              <a
+                href={linkWhatsApp(contatoDoPedido(pedido).telefone)}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1 text-green-700 hover:underline"
+              >
+                <MessageCircle size={14} />
+                {formatTelefone(contatoDoPedido(pedido).telefone)}
+              </a>
+            )}
           </div>
+
+          {pedido.tipoEntrega === "RETIRADA" || !pedido.enderecoEntregaSnapshot ? (
+            <div className="flex items-center gap-2 rounded-lg bg-blue-50 px-3 py-2 font-semibold text-blue-900">
+              <Store size={16} />
+              Retirada no balcão
+            </div>
+          ) : (
+            <div>
+              <p className="mb-1 text-xs font-semibold uppercase text-gray-500">
+                Endereço de entrega
+              </p>
+              <p className="text-gray-700">
+                {pedido.enderecoEntregaSnapshot.logradouro},{" "}
+                {pedido.enderecoEntregaSnapshot.numero}
+                {pedido.enderecoEntregaSnapshot.complemento &&
+                  ` - ${pedido.enderecoEntregaSnapshot.complemento}`}
+              </p>
+              <p className="text-gray-700">
+                {pedido.enderecoEntregaSnapshot.bairro},{" "}
+                {pedido.enderecoEntregaSnapshot.cidade}/{pedido.enderecoEntregaSnapshot.uf}
+              </p>
+            </div>
+          )}
 
           <div>
             <p className="mb-2 text-xs font-semibold uppercase text-gray-500">
@@ -268,6 +340,11 @@ export function PedidoDetalheModal({
                           {item.personalizacoes.adicionados
                             .map((a) => `${a.nome} (+${formatBRL(a.preco)})`)
                             .join(", ")}
+                        </p>
+                      )}
+                      {item.personalizacoes.observacao && (
+                        <p className="italic text-gray-700">
+                          Obs.: {item.personalizacoes.observacao}
                         </p>
                       )}
                     </div>

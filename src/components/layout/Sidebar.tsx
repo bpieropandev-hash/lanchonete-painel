@@ -11,6 +11,7 @@ import {
   Users,
   X,
   LogOut,
+  Store,
 } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import { useNotificacaoStore } from "@/store/notificacaoStore";
@@ -39,6 +40,12 @@ const items: NavItem[] = [
     label: "Chapeiro",
     icon: ChefHat,
     profiles: ["ADMIN", "CHAPEIRO"],
+  },
+  {
+    href: "/loja",
+    label: "Loja",
+    icon: Store,
+    profiles: ["ADMIN", "ATENDENTE"],
   },
   {
     href: "/cardapio",

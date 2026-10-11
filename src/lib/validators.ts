@@ -71,8 +71,18 @@ export const senhaSchema = z
   });
 export type SenhaInput = z.infer<typeof senhaSchema>;
 
+const valorOpcional = z
+  .string()
+  .optional()
+  .refine(
+    (v) => !v || !Number.isNaN(Number(v.replace(",", "."))),
+    "Valor inválido"
+  );
+
 export const fecharCaixaSchema = z.object({
-  obs: z.string().optional(),
+  obs: z.string().max(500, "Máximo 500 caracteres").optional(),
+  fundoTroco: valorOpcional,
+  dinheiroConferido: valorOpcional,
 });
 export type FecharCaixaInput = z.infer<typeof fecharCaixaSchema>;
 
