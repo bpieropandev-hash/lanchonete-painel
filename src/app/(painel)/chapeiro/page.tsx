@@ -10,6 +10,7 @@ import {
   Store,
   WifiOff,
   Maximize,
+  PackageX,
   MessageSquareWarning,
 } from "lucide-react";
 import axios from "axios";
@@ -20,6 +21,7 @@ import { playNotification, unlockAudio } from "@/lib/sound";
 import { useAuthStore } from "@/store/authStore";
 import { useToastStore } from "@/store/toastStore";
 import type { Pedido, StatusPedido } from "@/types";
+import { PainelEsgotados } from "@/components/cozinha/PainelEsgotados";
 
 /** Minutos desde o pedido a partir dos quais o card muda de cor. */
 const ALERTA_MIN = 15;
@@ -39,6 +41,7 @@ function ChapeiroPageContent() {
   const [pedidos, setPedidos] = useState<Pedido[]>([]);
   const [loading, setLoading] = useState(true);
   const [iniciado, setIniciado] = useState(false);
+  const [esgotadosAberto, setEsgotadosAberto] = useState(false);
   const [acting, setActing] = useState<string | null>(null);
   const [confirmando, setConfirmando] = useState<string | null>(null);
   const [conectado, setConectado] = useState(true);
@@ -281,6 +284,13 @@ function ChapeiroPageContent() {
             {hora}
           </span>
           <button
+            onClick={() => setEsgotadosAberto(true)}
+            className="flex items-center gap-2 rounded-lg bg-zinc-800 px-3 py-2 text-sm font-semibold text-white hover:bg-zinc-700"
+          >
+            <PackageX size={18} />
+            <span className="hidden sm:inline">Acabou algo?</span>
+          </button>
+          <button
             onClick={telaCheia}
             aria-label="Tela cheia"
             className="rounded-lg bg-zinc-800 p-2 text-white hover:bg-zinc-700"
@@ -445,6 +455,7 @@ function ChapeiroPageContent() {
           </div>
         )}
       </main>
+      <PainelEsgotados aberto={esgotadosAberto} onFechar={() => setEsgotadosAberto(false)} />
     </div>
   );
 }

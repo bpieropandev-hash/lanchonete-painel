@@ -5,6 +5,7 @@ import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { PainelShell } from "@/components/layout/PainelShell";
 import { PedidoCard } from "@/components/pedidos/PedidoCard";
 import { PedidoDetalheModal } from "@/components/pedidos/PedidoDetalheModal";
+import { ControleMovimento } from "@/components/loja/ControleMovimento";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { api } from "@/lib/api";
 import { getPedidosSocket, disconnectPedidosSocket } from "@/lib/socket";
@@ -14,6 +15,11 @@ import { useToastStore } from "@/store/toastStore";
 import type { Pedido, StatusPedido } from "@/types";
 
 const COLUNAS: { status: StatusPedido[]; label: string; color: string }[] = [
+  {
+    status: ["AGUARDANDO_CONFIRMACAO"],
+    label: "Aguardando WhatsApp",
+    color: "bg-emerald-100 text-emerald-900 border-emerald-300",
+  },
   { status: ["NOVO"], label: "Novos", color: "bg-blue-100 text-blue-900 border-blue-300" },
   { status: ["PREPARANDO"], label: "Preparando", color: "bg-yellow-100 text-yellow-900 border-yellow-300" },
   {
@@ -69,7 +75,9 @@ function PedidosPageContent() {
   }, [loadPedidos]);
 
   useEffect(() => {
-    const novos = pedidos.filter((p) => p.status === "NOVO").length;
+    const novos = pedidos.filter(
+      (p) => p.status === "NOVO" || p.status === "AGUARDANDO_CONFIRMACAO"
+    ).length;
     setNovosCount(novos);
   }, [pedidos, setNovosCount]);
 
@@ -99,7 +107,12 @@ function PedidosPageContent() {
         if (prev.some((p) => p.id === pedido.id)) return prev;
         return [pedido, ...prev];
       });
-      showToast(`Novo pedido #${pedido.numero}!`, "success");
+      showToast(
+        pedido.status === "AGUARDANDO_CONFIRMACAO"
+          ? `Pedido #${pedido.numero}: aguardando confirmação pelo WhatsApp`
+          : `Novo pedido #${pedido.numero}!`,
+        "success"
+      );
       playNotification();
     };
 
@@ -157,7 +170,10 @@ function PedidosPageContent() {
 
   return (
     <>
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <div className="mb-4">
+        <ControleMovimento />
+      </div>
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
         {COLUNAS.map((col) => {
           const itens = pedidos.filter((p) => col.status.includes(p.status));
           return (

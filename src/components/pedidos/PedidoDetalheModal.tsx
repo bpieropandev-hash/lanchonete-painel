@@ -9,14 +9,18 @@ import {
   ExternalLink,
   Store,
   Bell,
+  MessageCircle,
 } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
 import { Textarea } from "@/components/ui/Input";
 import { api } from "@/lib/api";
 import {
+  contatoDoPedido,
   formatBRL,
   formatDataHora,
+  formatTelefone,
+  linkWhatsApp,
   statusLabel,
   tipoPagamentoLabel,
 } from "@/lib/format";
@@ -35,11 +39,13 @@ type Acao = { status: StatusPedido; label: string; icon: typeof ChefHat };
 
 const PROXIMO_STATUS: Record<TipoEntrega, Partial<Record<StatusPedido, Acao>>> = {
   ENTREGA: {
+    AGUARDANDO_CONFIRMACAO: { status: "NOVO", label: "Confirmar (WhatsApp recebido)", icon: MessageCircle },
     NOVO: { status: "PREPARANDO", label: "Iniciar Preparo", icon: ChefHat },
     PREPARANDO: { status: "SAIU_ENTREGA", label: "Saiu para Entrega", icon: Bike },
     SAIU_ENTREGA: { status: "ENTREGUE", label: "Marcar como Entregue", icon: Check },
   },
   RETIRADA: {
+    AGUARDANDO_CONFIRMACAO: { status: "NOVO", label: "Confirmar (WhatsApp recebido)", icon: MessageCircle },
     NOVO: { status: "PREPARANDO", label: "Iniciar Preparo", icon: ChefHat },
     PREPARANDO: { status: "PRONTO", label: "Pronto para Retirada", icon: Bell },
     PRONTO: { status: "ENTREGUE", label: "Cliente Retirou", icon: Check },
@@ -239,15 +245,40 @@ export function PedidoDetalheModal({
             </div>
           )}
 
-          {pedido.cliente && (
-            <div>
-              <p className="mb-1 text-xs font-semibold uppercase text-gray-500">
-                Cliente
+          {pedido.status === "AGUARDANDO_CONFIRMACAO" && (
+            <div className="rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-3 text-sm text-emerald-950">
+              <p className="font-semibold">Aguardando confirmação pelo WhatsApp</p>
+              <p className="mt-1">
+                Confirme só se chegou mensagem do número{" "}
+                <strong>{formatTelefone(contatoDoPedido(pedido).telefone)}</strong> com o código{" "}
+                <strong className="font-mono text-base tracking-widest">
+                  {pedido.codigoConfirmacao}
+                </strong>
+                .
               </p>
-              <p className="font-medium text-gray-900">{pedido.cliente.nome}</p>
-              <p className="text-gray-600">{pedido.cliente.telefone}</p>
+              <p className="mt-1 text-xs">
+                Se ninguém confirmar em 30 minutos, o pedido é cancelado sozinho.
+              </p>
             </div>
           )}
+
+          <div>
+            <p className="mb-1 text-xs font-semibold uppercase text-gray-500">
+              Cliente {!pedido.clienteId && "(sem cadastro)"}
+            </p>
+            <p className="font-medium text-gray-900">{contatoDoPedido(pedido).nome}</p>
+            {contatoDoPedido(pedido).telefone && (
+              <a
+                href={linkWhatsApp(contatoDoPedido(pedido).telefone)}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1 text-green-700 hover:underline"
+              >
+                <MessageCircle size={14} />
+                {formatTelefone(contatoDoPedido(pedido).telefone)}
+              </a>
+            )}
+          </div>
 
           {pedido.tipoEntrega === "RETIRADA" || !pedido.enderecoEntregaSnapshot ? (
             <div className="flex items-center gap-2 rounded-lg bg-blue-50 px-3 py-2 font-semibold text-blue-900">

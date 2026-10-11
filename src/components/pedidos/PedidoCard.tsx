@@ -1,8 +1,8 @@
 "use client";
 
-import { Clock, MapPin, User as UserIcon, CreditCard, Store } from "lucide-react";
+import { Clock, MapPin, User as UserIcon, CreditCard, Store, MessageCircle } from "lucide-react";
 import type { Pedido } from "@/types";
-import { formatBRL, tempoDesde, tipoPagamentoLabel } from "@/lib/format";
+import { contatoDoPedido, formatBRL, tempoDesde, tipoPagamentoLabel } from "@/lib/format";
 
 interface PedidoCardProps {
   pedido: Pedido;
@@ -35,10 +35,16 @@ export function PedidoCard({ pedido, onClick }: PedidoCardProps) {
         </div>
       </div>
 
-      {pedido.cliente && (
-        <p className="mb-1 flex items-center gap-1 truncate text-xs text-gray-700">
-          <UserIcon size={12} />
-          {pedido.cliente.nome}
+      <p className="mb-1 flex items-center gap-1 truncate text-xs text-gray-700">
+        <UserIcon size={12} />
+        {contatoDoPedido(pedido).nome}
+        {!pedido.clienteId && <span className="text-gray-400">(sem cadastro)</span>}
+      </p>
+
+      {pedido.status === "AGUARDANDO_CONFIRMACAO" && pedido.codigoConfirmacao && (
+        <p className="mb-1 flex items-center gap-1 text-xs font-semibold text-emerald-800">
+          <MessageCircle size={12} />
+          Código <span className="font-mono text-sm tracking-widest">{pedido.codigoConfirmacao}</span>
         </p>
       )}
 
