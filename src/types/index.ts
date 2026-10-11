@@ -1,6 +1,7 @@
 export type PerfilUsuario = "ADMIN" | "ATENDENTE" | "CHAPEIRO" | "ENTREGADOR";
 
 export type StatusPedido =
+  | "AGUARDANDO_CONFIRMACAO"
   | "NOVO"
   | "PREPARANDO"
   | "PRONTO"
@@ -41,6 +42,14 @@ export interface ConfiguracaoLoja {
   aceitaRetirada: boolean;
   tempoEstimadoEntregaMin: number;
   tempoEstimadoRetiradaMin: number;
+  tempoEntregaAtualMin: number;
+  tempoRetiradaAtualMin: number;
+  tempoExtraMin: number;
+  pausadoAte: string | null;
+  mensagemPausa: string | null;
+  entregaPausadaAte: string | null;
+  entregaDisponivel: boolean;
+  whatsappLoja: string | null;
   bairros: BairroEntrega[];
 }
 
@@ -172,6 +181,12 @@ export interface Pedido {
   cliente?: Cliente | null;
   status: StatusPedido;
   tipoEntrega: TipoEntrega;
+  /** Contato do pedido (conta ou convidado) */
+  nomeContato: string | null;
+  telefoneContato: string | null;
+  /** Código que o cliente envia pelo WhatsApp para confirmar */
+  codigoConfirmacao: string | null;
+  confirmadoWhatsappEm?: string | null;
   pagamento: TipoPagamento;
   trocoPara: string | null;
   subtotal: string;

@@ -76,6 +76,7 @@ export function tempoDesde(date: string | Date): string {
 
 export function statusLabel(status: string): string {
   const labels: Record<string, string> = {
+    AGUARDANDO_CONFIRMACAO: "Aguardando WhatsApp",
     NOVO: "Novo",
     PREPARANDO: "Preparando",
     PRONTO: "Pronto p/ retirada",
@@ -103,4 +104,27 @@ export function perfilLabel(perfil: string): string {
     ENTREGADOR: "Entregador",
   };
   return labels[perfil] || perfil;
+}
+
+/** Nome e telefone do pedido: contato do convidado ou do cliente com conta. */
+export function contatoDoPedido(pedido: {
+  nomeContato?: string | null;
+  telefoneContato?: string | null;
+  cliente?: { nome: string; telefone: string } | null;
+}): { nome: string; telefone: string } {
+  return {
+    nome: pedido.nomeContato || pedido.cliente?.nome || "Cliente",
+    telefone: pedido.telefoneContato || pedido.cliente?.telefone || "",
+  };
+}
+
+/** Link para abrir conversa no WhatsApp com um telefone brasileiro. */
+export function linkWhatsApp(telefone: string, texto?: string): string {
+  const digitos = telefone.replace(/\D/g, "");
+  const numero = digitos.startsWith("55") ? digitos : `55${digitos}`;
+  return `https://wa.me/${numero}${texto ? `?text=${encodeURIComponent(texto)}` : ""}`;
+}
+
+export function horaCurta(iso: string): string {
+  return new Date(iso).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
 }

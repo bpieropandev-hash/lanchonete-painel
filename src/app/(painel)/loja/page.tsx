@@ -8,6 +8,7 @@ import { PainelShell } from "@/components/layout/PainelShell";
 import { Button } from "@/components/ui/Button";
 import { Input, Textarea } from "@/components/ui/Input";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import { ControleMovimento } from "@/components/loja/ControleMovimento";
 import { api } from "@/lib/api";
 import { formatBRL, formatDataHora } from "@/lib/format";
 import { useAuthStore } from "@/store/authStore";
@@ -42,6 +43,7 @@ interface FormConfig {
   aceitaRetirada: boolean;
   tempoEstimadoEntregaMin: string;
   tempoEstimadoRetiradaMin: string;
+  whatsappLoja: string;
 }
 
 function paraForm(c: ConfiguracaoLoja): FormConfig {
@@ -55,6 +57,7 @@ function paraForm(c: ConfiguracaoLoja): FormConfig {
     aceitaRetirada: c.aceitaRetirada,
     tempoEstimadoEntregaMin: String(c.tempoEstimadoEntregaMin),
     tempoEstimadoRetiradaMin: String(c.tempoEstimadoRetiradaMin),
+    whatsappLoja: c.whatsappLoja ?? "",
   };
 }
 
@@ -124,6 +127,7 @@ function LojaContent() {
         aceitaRetirada: form.aceitaRetirada,
         tempoEstimadoEntregaMin: parseInt(form.tempoEstimadoEntregaMin, 10) || 45,
         tempoEstimadoRetiradaMin: parseInt(form.tempoEstimadoRetiradaMin, 10) || 25,
+        whatsappLoja: form.whatsappLoja.trim() || null,
       });
       setConfig(data);
       setForm(paraForm(data));
@@ -208,6 +212,15 @@ function LojaContent() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
+      <ControleMovimento />
+
+      {!config.whatsappLoja && (
+        <div className="rounded-xl border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-900">
+          <strong>WhatsApp da loja não configurado.</strong> Pedidos sem cadastro e de clientes
+          novos precisam ser confirmados por ele: enquanto estiver vazio, esses pedidos são
+          recusados. {isAdmin ? "Preencha em “Pedidos e entrega” abaixo." : "Avise o administrador."}
+        </div>
+      )}
       {/* Status */}
       <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -354,6 +367,17 @@ function LojaContent() {
             onChange={(e) => setForm({ ...form, taxaEntregaPadrao: e.target.value })}
           />
           <Input
+            label="WhatsApp da loja (com DDD)"
+            name="whatsappLoja"
+            inputMode="tel"
+            placeholder="(31) 99999-9999"
+            value={form.whatsappLoja}
+            disabled={!isAdmin}
+            hint="Clientes novos mandam o código de confirmação para este número."
+            onChange={(e) => setForm({ ...form, whatsappLoja: e.target.value })}
+          />
+          <div aria-hidden="true" className="hidden sm:block" />
+          <Input
             label="Tempo estimado de entrega (min)"
             name="tempoEntrega"
             inputMode="numeric"
@@ -399,7 +423,7 @@ function LojaContent() {
             name="mensagemFechada"
             rows={2}
             maxLength={300}
-            placeholder="Ex.: Hoje fechamos mais cedo. Voltamos amanhã às 18h!"
+            placeholder="Ex.: Fechado hoje. Abrimos amanhã às 18h."
             value={form.mensagemFechada}
             disabled={!isAdmin}
             onChange={(e) => setForm({ ...form, mensagemFechada: e.target.value })}
