@@ -423,7 +423,7 @@ function LojaContent() {
             name="mensagemFechada"
             rows={2}
             maxLength={300}
-            placeholder="Ex.: Hoje fechamos mais cedo. Voltamos amanhã às 18h!"
+            placeholder="Ex.: Fechado hoje. Abrimos amanhã às 18h."
             value={form.mensagemFechada}
             disabled={!isAdmin}
             onChange={(e) => setForm({ ...form, mensagemFechada: e.target.value })}

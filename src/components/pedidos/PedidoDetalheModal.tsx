@@ -257,7 +257,7 @@ export function PedidoDetalheModal({
                 .
               </p>
               <p className="mt-1 text-xs">
-                Se ninguém confirmar em 30 minutos, o pedido é cancelado sozinho.
+                Cancelado automaticamente se não confirmado em 30 min.
               </p>
             </div>
           )}
