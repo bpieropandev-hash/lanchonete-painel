@@ -5,11 +5,11 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
+import { Input, Select } from "@/components/ui/Input";
 import { entregadorSchema, type EntregadorInput } from "@/lib/validators";
-import { api } from "@/lib/api";
+import { api, mensagemErroApi } from "@/lib/api";
 import { useToastStore } from "@/store/toastStore";
-import type { Entregador } from "@/types";
+import type { Entregador, Usuario } from "@/types";
 
 interface EntregadorModalProps {
   open: boolean;
@@ -25,6 +25,7 @@ export function EntregadorModal({
   entregador,
 }: EntregadorModalProps) {
   const [submitting, setSubmitting] = useState(false);
+  const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const showToast = useToastStore((s) => s.show);
 
   const {
@@ -41,12 +42,29 @@ export function EntregadorModal({
       reset({
         nome: entregador?.nome || "",
         telefone: entregador?.telefone || "",
+        usuarioId: entregador?.usuarioId || "",
       });
     }
   }, [open, entregador, reset]);
 
-  const onSubmit = async (data: EntregadorInput) => {
+  // Contas que podem entrar na tela de entregas
+  useEffect(() => {
+    if (!open) return;
+    api
+      .get<Usuario[]>("/usuarios")
+      .then(({ data }) =>
+        setUsuarios(
+          (Array.isArray(data) ? data : []).filter(
+            (u) => u.perfil === "ENTREGADOR"
+          )
+        )
+      )
+      .catch(() => setUsuarios([]));
+  }, [open]);
+
+  const onSubmit = async (form: EntregadorInput) => {
     setSubmitting(true);
+    const data = { ...form, usuarioId: form.usuarioId || null };
     try {
       if (entregador) {
         await api.patch(`/admin/entregadores/${entregador.id}`, data);
@@ -57,8 +75,8 @@ export function EntregadorModal({
       }
       onSaved();
       onClose();
-    } catch {
-      showToast("Erro ao salvar entregador", "error");
+    } catch (err) {
+      showToast(mensagemErroApi(err, "Erro ao salvar entregador"), "error");
     } finally {
       setSubmitting(false);
     }
@@ -98,6 +116,22 @@ export function EntregadorModal({
           error={errors.telefone?.message}
           hint="10 ou 11 dígitos, sem traço ou parênteses"
         />
+        <Select
+          label="Acesso à tela de entregas"
+          {...register("usuarioId")}
+          hint={
+            usuarios.length === 0
+              ? "Crie um usuário com perfil Entregador em Usuários para ele ver as entregas no celular"
+              : "Login que este entregador usa para ver as entregas dele"
+          }
+        >
+          <option value="">Sem acesso</option>
+          {usuarios.map((u) => (
+            <option key={u.id} value={u.id}>
+              {u.nome} ({u.email}){u.ativo ? "" : " - inativo"}
+            </option>
+          ))}
+        </Select>
       </form>
     </Modal>
   );

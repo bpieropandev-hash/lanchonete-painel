@@ -133,6 +133,9 @@ export interface Entregador {
   nome: string;
   telefone: string;
   ativo: boolean;
+  /** Usuário (perfil ENTREGADOR) que vê as entregas na tela /entrega */
+  usuarioId?: string | null;
+  entregasAtivas?: number;
   criadoEm?: string;
   atualizadoEm?: string;
 }
@@ -174,6 +177,14 @@ export interface ItemPedido {
   produto?: Produto;
 }
 
+export interface EntregaPedido {
+  id: string;
+  entregadorId: string | null;
+  entregador?: Entregador | null;
+  saiuEm: string | null;
+  entregueEm: string | null;
+}
+
 export interface Pedido {
   id: string;
   numero: number;
@@ -195,8 +206,7 @@ export interface Pedido {
   obs: string | null;
   enderecoEntregaSnapshot: EnderecoSnapshot | null;
   motivoCancelamento: string | null;
-  entregadorId: string | null;
-  entregador?: Entregador | null;
+  entrega?: EntregaPedido | null;
   itens: ItemPedido[];
   criadoEm: string;
   atualizadoEm: string;

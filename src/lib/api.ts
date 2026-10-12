@@ -131,3 +131,13 @@ api.interceptors.response.use(
     }
   }
 );
+
+/** Mensagem de erro vinda da API (class-validator manda um array). */
+export function mensagemErroApi(err: unknown, padrao: string): string {
+  if (axios.isAxiosError(err) && err.response?.data) {
+    const msg = (err.response.data as { message?: string | string[] }).message;
+    if (Array.isArray(msg)) return msg[0];
+    if (msg) return msg;
+  }
+  return padrao;
+}

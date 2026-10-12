@@ -14,6 +14,7 @@ import {
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
 import { Textarea } from "@/components/ui/Input";
+import { EntregadorDoPedido } from "@/components/pedidos/EntregadorDoPedido";
 import { api } from "@/lib/api";
 import {
   contatoDoPedido,
@@ -91,6 +92,17 @@ export function PedidoDetalheModal({
       .catch(() => showToast("Erro ao carregar pedido", "error"))
       .finally(() => setLoading(false));
   }, [open, pedidoId, showToast]);
+
+  const recarregar = () => {
+    if (!pedidoId) return;
+    api
+      .get<Pedido>(`/admin/pedidos/${pedidoId}`)
+      .then((res) => {
+        setPedido(res.data);
+        onUpdated(res.data);
+      })
+      .catch(() => showToast("Erro ao carregar pedido", "error"));
+  };
 
   const handleAvancar = async () => {
     if (!pedido) return;
@@ -365,13 +377,8 @@ export function PedidoDetalheModal({
             </div>
           )}
 
-          {pedido.entregador && (
-            <div>
-              <p className="mb-1 text-xs font-semibold uppercase text-gray-500">
-                Entregador
-              </p>
-              <p className="text-gray-900">{pedido.entregador.nome}</p>
-            </div>
+          {pedido.tipoEntrega !== "RETIRADA" && (
+            <EntregadorDoPedido pedido={pedido} onAlterado={recarregar} />
           )}
 
           {pedido.motivoCancelamento && (

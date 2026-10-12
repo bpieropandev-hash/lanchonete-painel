@@ -41,6 +41,8 @@ export const entregadorSchema = z.object({
   telefone: z
     .string()
     .regex(/^\d{10,11}$/, "Telefone deve ter 10 ou 11 dígitos"),
+  /** "" = sem acesso à tela de entregas */
+  usuarioId: z.string(),
 });
 export type EntregadorInput = z.infer<typeof entregadorSchema>;
 

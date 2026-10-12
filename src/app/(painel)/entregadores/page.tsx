@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Plus, Edit, Power, Phone } from "lucide-react";
+import { Plus, Edit, Power, Phone, Smartphone } from "lucide-react";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { PainelShell } from "@/components/layout/PainelShell";
 import { Button } from "@/components/ui/Button";
@@ -75,6 +75,7 @@ function EntregadoresContent() {
               <tr>
                 <th className="px-4 py-3">Nome</th>
                 <th className="px-4 py-3">Telefone</th>
+                <th className="px-4 py-3">Acesso</th>
                 <th className="px-4 py-3">Status</th>
                 <th className="px-4 py-3 text-right">Ações</th>
               </tr>
@@ -83,7 +84,7 @@ function EntregadoresContent() {
               {entregadores.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={4}
+                    colSpan={5}
                     className="px-4 py-8 text-center text-gray-400"
                   >
                     Nenhum entregador cadastrado
@@ -100,6 +101,18 @@ function EntregadoresContent() {
                         <Phone size={14} />
                         {formatTelefone(e.telefone)}
                       </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      {e.usuarioId ? (
+                        <span className="flex items-center gap-1 text-gray-600">
+                          <Smartphone size={14} />
+                          Tela de entregas
+                        </span>
+                      ) : (
+                        <span className="text-xs text-amber-700">
+                          Sem login vinculado
+                        </span>
+                      )}
                     </td>
                     <td className="px-4 py-3">
                       <span
