@@ -49,7 +49,7 @@ export type EntregadorInput = z.infer<typeof entregadorSchema>;
 export const usuarioSchema = z.object({
   nome: z.string().min(2, "Mínimo 2 caracteres"),
   email: z.string().email("E-mail inválido"),
-  senha: z.string().min(6, "Senha deve ter no mínimo 6 caracteres"),
+  senha: z.string().min(10, "Senha deve ter no mínimo 10 caracteres"),
   perfil: z.enum(["ADMIN", "ATENDENTE", "CHAPEIRO", "ENTREGADOR"]),
 });
 export type UsuarioInput = z.infer<typeof usuarioSchema>;
@@ -64,7 +64,7 @@ export type UsuarioEditInput = z.infer<typeof usuarioEditSchema>;
 export const senhaSchema = z
   .object({
     senhaAtual: z.string().min(1, "Senha atual obrigatória"),
-    novaSenha: z.string().min(6, "Mínimo 6 caracteres"),
+    novaSenha: z.string().min(10, "Mínimo 10 caracteres"),
     confirmar: z.string().min(6, "Mínimo 6 caracteres"),
   })
   .refine((d) => d.novaSenha === d.confirmar, {

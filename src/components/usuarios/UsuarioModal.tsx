@@ -70,8 +70,8 @@ export function UsuarioModal({
   }, [open, usuario, reset]);
 
   const onSubmit = async (data: FormData) => {
-    if (!isEdit && (!data.senha || data.senha.length < 6)) {
-      setError("senha", { message: "Senha deve ter no mínimo 6 caracteres" });
+    if (!isEdit && (!data.senha || data.senha.length < 10)) {
+      setError("senha", { message: "Senha deve ter no mínimo 10 caracteres" });
       return;
     }
     setSubmitting(true);
