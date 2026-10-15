@@ -1,6 +1,8 @@
 # Lanchonete: painel da loja
 
-Painel interno (Next.js 14) para atendente, chapeiro e administrador. Consome a `lanchonete-api`.
+Painel interno (Next.js 15) para atendente, chapeiro e administrador. Consome a `lanchonete-api`.
+
+Runtime Docker usa Node22/USER node, patches Debian e HEALTHCHECK, sem npm/npx/yarn. Comandos npm são para desenvolvimento/CI. Em Podman, construa com `--format docker` para preservar HEALTHCHECK.
 
 ## Rodando localmente
 
