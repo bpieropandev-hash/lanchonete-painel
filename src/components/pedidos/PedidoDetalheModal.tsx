@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ChefHat,
   Bike,
@@ -65,12 +65,19 @@ function mensagemErro(err: unknown, padrao: string): string {
   return padrao;
 }
 
-export function PedidoDetalheModal({
+export function PedidoDetalheModal(props: PedidoDetalheModalProps) {
+  return <PedidoDetalheContent key={`${props.open}:${props.pedidoId}`} {...props} />;
+}
+
+function PedidoDetalheContent({
   open,
   pedidoId,
   onClose,
   onUpdated,
 }: PedidoDetalheModalProps) {
+  const alive = useRef(false);
+  const sequence = useRef(0);
+  const [erro, setErro] = useState(false);
   const [pedido, setPedido] = useState<Pedido | null>(null);
   const [loading, setLoading] = useState(false);
   const [acting, setActing] = useState(false);
@@ -79,33 +86,43 @@ export function PedidoDetalheModal({
   const showToast = useToastStore((s) => s.show);
 
   useEffect(() => {
+    const counter = sequence;
+    alive.current = true;
+    return () => { alive.current = false; counter.current++; };
+  }, []);
+
+  useEffect(() => {
     if (!open || !pedidoId) {
       setPedido(null);
       setShowCancel(false);
       setMotivoCancelamento("");
       return;
     }
+    const own = ++sequence.current;
     setLoading(true);
+    setErro(false);
     api
       .get<Pedido>(`/admin/pedidos/${pedidoId}`)
-      .then((res) => setPedido(res.data))
-      .catch(() => showToast("Erro ao carregar pedido", "error"))
-      .finally(() => setLoading(false));
+      .then((res) => { if (alive.current && own === sequence.current && res.data.id === pedidoId) setPedido(res.data); })
+      .catch(() => { if (alive.current && own === sequence.current) { setErro(true); showToast("Erro ao carregar pedido", "error"); } })
+      .finally(() => { if (alive.current && own === sequence.current) setLoading(false); });
   }, [open, pedidoId, showToast]);
 
   const recarregar = () => {
-    if (!pedidoId) return;
+    if (!pedidoId || !alive.current) return;
+    const own = ++sequence.current;
     api
       .get<Pedido>(`/admin/pedidos/${pedidoId}`)
       .then((res) => {
+        if (!alive.current || own !== sequence.current || res.data.id !== pedidoId) return;
         setPedido(res.data);
         onUpdated(res.data);
       })
-      .catch(() => showToast("Erro ao carregar pedido", "error"));
+      .catch(() => { if (alive.current && own === sequence.current) showToast("Erro ao carregar pedido", "error"); });
   };
 
   const handleAvancar = async () => {
-    if (!pedido) return;
+    if (!open || !alive.current || acting || !pedido || pedido.id !== pedidoId) return;
     const next = proximaAcao(pedido);
     if (!next) return;
     setActing(true);
@@ -114,6 +131,7 @@ export function PedidoDetalheModal({
         `/admin/pedidos/${pedido.id}/status`,
         { status: next.status }
       );
+      if (!alive.current || data.id !== pedidoId) return;
       showToast(`Pedido marcado como ${statusLabel(next.status)}`, "success");
       onUpdated(data);
       if (data.whatsappLink) {
@@ -121,14 +139,15 @@ export function PedidoDetalheModal({
       }
       onClose();
     } catch (err) {
+      if (!alive.current) return;
       showToast(mensagemErro(err, "Erro ao atualizar status"), "error");
     } finally {
-      setActing(false);
+      if (alive.current) setActing(false);
     }
   };
 
   const handleCancelar = async () => {
-    if (!pedido) return;
+    if (!open || !alive.current || acting || !pedido || pedido.id !== pedidoId) return;
     if (!motivoCancelamento.trim()) {
       showToast("Informe o motivo do cancelamento", "error");
       return;
@@ -139,13 +158,15 @@ export function PedidoDetalheModal({
         `/admin/pedidos/${pedido.id}/status`,
         { status: "CANCELADO", motivoCancelamento }
       );
+      if (!alive.current || data.id !== pedidoId) return;
       showToast("Pedido cancelado", "success");
       onUpdated(data);
       onClose();
     } catch (err) {
+      if (!alive.current) return;
       showToast(mensagemErro(err, "Erro ao cancelar pedido"), "error");
     } finally {
-      setActing(false);
+      if (alive.current) setActing(false);
     }
   };
 
@@ -212,7 +233,9 @@ export function PedidoDetalheModal({
         ) : null
       }
     >
-      {loading || !pedido ? (
+      {erro ? (
+        <p role="alert" className="mx-auto max-w-md py-8 text-center text-sm">Erro ao carregar pedido. Feche e tente novamente.</p>
+      ) : loading || !pedido ? (
         <p className="py-8 text-center text-sm text-gray-500">Carregando...</p>
       ) : (
         <div className="space-y-4 text-sm">
