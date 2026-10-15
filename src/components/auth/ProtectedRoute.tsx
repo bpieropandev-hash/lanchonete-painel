@@ -19,14 +19,14 @@ export function ProtectedRoute({
   allowedProfiles,
 }: ProtectedRouteProps) {
   const router = useRouter();
-  const { funcionario, isAuthenticated, hasHydrated, hydrate } = useAuthStore();
+  const { funcionario, isAuthenticated, hasHydrated, hydrate, hydrationError, isHydrating } = useAuthStore();
 
   useEffect(() => {
     if (!hasHydrated) hydrate();
   }, [hasHydrated, hydrate]);
 
   useEffect(() => {
-    if (!hasHydrated) return;
+    if (!hasHydrated || hydrationError || isHydrating) return;
     if (!isAuthenticated) {
       router.replace("/login");
       return;
@@ -38,9 +38,18 @@ export function ProtectedRoute({
     ) {
       router.replace(getDefaultRoute(funcionario.perfil));
     }
-  }, [hasHydrated, isAuthenticated, allowedProfiles, funcionario, router]);
+  }, [hasHydrated, hydrationError, isHydrating, isAuthenticated, allowedProfiles, funcionario, router]);
 
-  if (!hasHydrated || !isAuthenticated) {
+  if (hydrationError) {
+    return (
+      <div role="alert" className="mx-auto flex max-w-md flex-col items-center gap-3 px-4 py-12 text-center text-sm">
+        <p>{hydrationError}</p>
+        <button className="font-semibold underline" onClick={() => void hydrate()}>Tentar novamente</button>
+      </div>
+    );
+  }
+
+  if (!hasHydrated || isHydrating || !isAuthenticated) {
     return <FullPageSpinner />;
   }
 

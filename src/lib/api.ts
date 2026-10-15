@@ -1,3 +1,5 @@
+import { withRefreshLock } from "@/lib/auth-refresh";
+import { definitiveAuthFailure } from "@/lib/functional";
 import axios, { AxiosError, AxiosRequestConfig, InternalAxiosRequestConfig } from "axios";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api/v1";
@@ -40,24 +42,7 @@ api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   return config;
 });
 
-interface QueueItem {
-  resolve: (token: string) => void;
-  reject: (error: unknown) => void;
-}
-
-let isRefreshing = false;
-let pendingQueue: QueueItem[] = [];
-
-function processQueue(error: unknown, token: string | null): void {
-  pendingQueue.forEach((item) => {
-    if (error || !token) {
-      item.reject(error);
-    } else {
-      item.resolve(token);
-    }
-  });
-  pendingQueue = [];
-}
+let refreshFlight: Promise<string> | null = null;
 
 // Unwrap { success, data } envelope from backend
 api.interceptors.response.use((response) => {
@@ -71,63 +56,51 @@ api.interceptors.response.use((response) => {
 api.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
-    const originalRequest = error.config as
-      | (AxiosRequestConfig & { _retry?: boolean })
-      | undefined;
+    const original = error.config as (AxiosRequestConfig & { _retry?: boolean }) | undefined;
+    if (!original || error.response?.status !== 401 || original._retry) return Promise.reject(error);
+    const url = original.url || "";
+    if ([/auth\/(?:cliente\/login|funcionario\/login|refresh|logout)(?:$|\?)/].some((pattern) => pattern.test(url))) return Promise.reject(error);
+    original._retry = true;
+    const sentAuthorization = String(original.headers?.Authorization || "");
+    const failedAccess = sentAuthorization.startsWith("Bearer ") ? sentAuthorization.slice(7) : null;
 
-    if (!originalRequest || error.response?.status !== 401 || originalRequest._retry) {
-      return Promise.reject(error);
-    }
-
-    const url = originalRequest.url || "";
-    if (url.includes("/auth/funcionario/login") || url.includes("/auth/refresh")) {
-      return Promise.reject(error);
-    }
-
-    if (isRefreshing) {
-      return new Promise((resolve, reject) => {
-        pendingQueue.push({
-          resolve: (token: string) => {
-            if (originalRequest.headers) {
-              originalRequest.headers.Authorization = `Bearer ${token}`;
-            }
-            resolve(api(originalRequest));
-          },
-          reject,
-        });
+    if (!refreshFlight) {
+      refreshFlight = withRefreshLock("painel:auth-refresh", async () => {
+        // Another tab may have rotated the family while this request waited for the lock.
+        const currentAccess = getAccessToken();
+        const refreshToken = getRefreshToken();
+        if (currentAccess && currentAccess !== failedAccess) return currentAccess;
+        if (!refreshToken) {
+          clearTokens();
+          if (typeof window !== "undefined") window.location.href = "/login";
+          throw error;
+        }
+        try {
+          const response = await axios.post(`${API_URL}/auth/refresh`, { refreshToken }, { timeout: 10_000 });
+          const data = response.data?.data ?? response.data;
+          if (getRefreshToken() !== refreshToken) throw new Error("Sessão alterada");
+          setTokens(data.accessToken, data.refreshToken);
+          return data.accessToken as string;
+        } catch (refreshError) {
+          if (definitiveAuthFailure(refreshError) && getRefreshToken() === refreshToken) {
+            clearTokens();
+            if (typeof window !== "undefined") window.location.href = "/login";
+          }
+          throw refreshError;
+        }
       });
     }
-
-    originalRequest._retry = true;
-    isRefreshing = true;
-
+    const flight = refreshFlight;
     try {
-      const refreshToken = getRefreshToken();
-      if (!refreshToken) throw new Error("Sem refresh token");
-
-      const response = await axios.post(`${API_URL}/auth/refresh`, { refreshToken });
-
-      const resBody = response.data?.data ?? response.data;
-      const { accessToken, refreshToken: newRefreshToken } = resBody as {
-        accessToken: string;
-        refreshToken: string;
-      };
-      setTokens(accessToken, newRefreshToken);
-
-      if (originalRequest.headers) {
-        originalRequest.headers.Authorization = `Bearer ${accessToken}`;
-      }
-      processQueue(null, accessToken);
-      return api(originalRequest);
+      const token = await flight;
+      // Logout or a new login must invalidate a completed but not yet retried request.
+      if (getAccessToken() !== token) throw new Error("Sessão alterada");
+      original.headers = { ...original.headers, Authorization: `Bearer ${token}` };
+      return api(original);
     } catch (refreshError) {
-      processQueue(refreshError, null);
-      clearTokens();
-      if (typeof window !== "undefined") {
-        window.location.href = "/login";
-      }
       return Promise.reject(refreshError);
     } finally {
-      isRefreshing = false;
+      if (refreshFlight === flight) refreshFlight = null;
     }
   }
 );

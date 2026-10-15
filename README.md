@@ -33,3 +33,20 @@ O primeiro acesso usa o admin criado pelo `npm run seed` da API.
 `Dockerfile` com `output: "standalone"`. As variáveis `NEXT_PUBLIC_*` vão como `--build-arg` no build.
 
 No Railway: veja o guia `DEPLOY-RAILWAY.md` no repositório `lanchonete-api`.
+
+## Build e validação de dependências (2026-10-15)
+
+Use Node.js 22. Instalação reprodutível e peers estritos:
+
+```sh
+npm ci --strict-peer-deps
+npm run audit:prod
+npm run audit
+npm run lint
+npm run typecheck
+npm run build
+```
+
+Os gates de audit falham inclusive para severidade baixa; avisos remanescentes não são ocultados. Lint não altera fontes. Actions de CI estão fixadas por SHA e recebem somente `contents: read`. Consulte `auditoria/2026-10-15/FIX_DEPENDENCIES.md` no workspace pai para versões, evidências e limitações.
+
+CSP é gerada no middleware por requisição: nonce substitui qualquer valor recebido do cliente, acompanha o header encaminhado ao render e o header da resposta. Scripts de produção não usam `unsafe-inline` ou `unsafe-eval`. O root layout lê headers para render dinâmico; isso desabilita prerender/ISR dessas páginas. API/WebSocket usam origens das variáveis `NEXT_PUBLIC_*`, e consultas CEP permitem `https://viacep.com.br`. Estilos inline continuam permitidos por compatibilidade de UI.

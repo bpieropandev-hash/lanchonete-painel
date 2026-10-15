@@ -3,6 +3,7 @@ import { api, getAccessToken } from "@/lib/api";
 
 const WS_URL = process.env.NEXT_PUBLIC_WS_URL || "http://localhost:3000";
 
+let reconnect: ReturnType<typeof setTimeout> | undefined;
 let pedidosSocket: Socket | null = null;
 
 /**
@@ -22,8 +23,12 @@ export function getPedidosSocket(): Socket {
       if (motivo === "io server disconnect") {
         api
           .get("/auth/me")
-          .catch(() => undefined)
-          .finally(() => setTimeout(() => socket.connect(), 1000));
+          .then(() => {
+            if (pedidosSocket !== socket) return;
+            clearTimeout(reconnect);
+            reconnect = setTimeout(() => { if (pedidosSocket === socket) socket.connect(); }, 1000);
+          })
+          .catch(() => undefined);
       }
     });
     pedidosSocket = socket;
@@ -32,7 +37,9 @@ export function getPedidosSocket(): Socket {
 }
 
 export function disconnectPedidosSocket(): void {
+  clearTimeout(reconnect);
   if (pedidosSocket) {
+    pedidosSocket.removeAllListeners();
     pedidosSocket.disconnect();
     pedidosSocket = null;
   }
