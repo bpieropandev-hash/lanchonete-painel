@@ -39,7 +39,7 @@ export function EntregadorDoPedido({ pedido, onAlterado }: EntregadorDoPedidoPro
       showToast(entregadorId ? "Entregador definido" : "Entregador removido", "success");
       onAlterado();
     } catch (err) {
-      showToast(mensagemErroApi(err, "Erro ao definir entregador"), "error");
+      showToast(mensagemErroApi(err, "Não foi possível definir o entregador."), "error");
     } finally {
       setSalvando(false);
     }

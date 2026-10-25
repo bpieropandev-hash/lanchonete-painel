@@ -76,7 +76,7 @@ export function EntregadorModal({
       onSaved();
       onClose();
     } catch (err) {
-      showToast(mensagemErroApi(err, "Erro ao salvar entregador"), "error");
+      showToast(mensagemErroApi(err, "Não foi possível salvar o entregador."), "error");
     } finally {
       setSubmitting(false);
     }
@@ -86,7 +86,7 @@ export function EntregadorModal({
     <Modal
       open={open}
       onClose={onClose}
-      title={entregador ? "Editar Entregador" : "Novo Entregador"}
+      title={entregador ? "Editar entregador" : "Novo entregador"}
       size="sm"
       footer={
         <div className="flex gap-2">

@@ -57,7 +57,7 @@ function ChapeiroPageContent() {
       const list: Pedido[] = Array.isArray(res.data) ? res.data : res.data?.data ?? [];
       setPedidos(list.filter((p) => p.status === "NOVO" || p.status === "PREPARANDO"));
     } catch {
-      showToast("Erro ao carregar pedidos", "error");
+      showToast("Não foi possível carregar os pedidos.", "error");
     } finally {
       setLoading(false);
     }
@@ -116,7 +116,7 @@ function ChapeiroPageContent() {
       if (payload.status !== "NOVO" && payload.status !== "PREPARANDO") {
         setPedidos((prev) => prev.filter((p) => p.id !== payload.id));
         if (payload.status === "CANCELADO") {
-          showToast(`Pedido #${payload.numero} foi CANCELADO, não prepare`, "error");
+          showToast(`Pedido #${payload.numero} cancelado. Não prepare.`, "error");
           if (somAtivoRef.current) playNotification();
         }
         return;
@@ -222,8 +222,8 @@ function ChapeiroPageContent() {
     } catch (err) {
       const msg =
         axios.isAxiosError(err) && err.response?.data
-          ? (err.response.data as { message?: string }).message || "Erro ao atualizar"
-          : "Erro ao atualizar";
+          ? (err.response.data as { message?: string }).message || "Não foi possível atualizar."
+          : "Não foi possível atualizar.";
       showToast(msg, "error");
       // Provavelmente o pedido mudou em outra tela (ex.: cancelado)
       loadPedidos();
@@ -240,38 +240,31 @@ function ChapeiroPageContent() {
   const hora = new Date(agora).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
 
   return (
-    <div className="min-h-screen bg-zinc-900 text-white">
+    <div className="min-h-screen bg-zinc-950 text-white">
       {!iniciado && (
         <button
           type="button"
           onClick={iniciarTurno}
           className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-6 bg-zinc-950/95 p-6 text-center"
         >
-          <span className="flex h-28 w-28 items-center justify-center rounded-full bg-primary-500">
+          <span className="flex h-24 w-24 items-center justify-center rounded-full bg-zinc-800">
             <Volume2 size={56} />
           </span>
-          <span className="text-4xl font-black sm:text-5xl">Toque para começar</span>
+          <span className="text-4xl font-bold sm:text-5xl">Toque para começar</span>
           <span className="max-w-xl text-xl text-zinc-300">
-            Liga o som de pedido novo e mantém a tela acesa. Faça isso sempre que abrir ou
-            recarregar esta tela.
+            Isso liga o aviso sonoro de pedido novo e mantém a tela acesa. Necessário sempre que
+            a tela for aberta ou recarregada.
           </span>
         </button>
       )}
 
-      <header className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-zinc-700 bg-zinc-950 px-4 py-3 sm:px-6">
+      <header className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-zinc-800 bg-zinc-950 px-4 py-3 sm:px-6">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-500">
-            <ChefHat size={22} />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold leading-tight sm:text-2xl">Cozinha</h1>
-            <p className="text-sm text-zinc-400">
-              <span className={novos > 0 ? "font-bold text-yellow-400" : ""}>
-                {novos} {novos === 1 ? "novo" : "novos"}
-              </span>{" "}
-              · {emPreparo} em preparo
-            </p>
-          </div>
+          <h1 className="text-xl font-bold">Cozinha</h1>
+          <span className={`rounded-md px-2.5 py-1 text-sm ${novos > 0 ? "bg-yellow-400 font-semibold text-zinc-900" : "bg-zinc-800 text-zinc-300"}`}>
+            {novos} {novos === 1 ? "novo" : "novos"}
+          </span>
+          <span className="rounded-md bg-zinc-800 px-2.5 py-1 text-sm text-zinc-300">{emPreparo} em preparo</span>
         </div>
         <div className="flex items-center gap-2">
           {!conectado && (
@@ -285,21 +278,21 @@ function ChapeiroPageContent() {
           </span>
           <button
             onClick={() => setEsgotadosAberto(true)}
-            className="flex items-center gap-2 rounded-lg bg-zinc-800 px-3 py-2 text-sm font-semibold text-white hover:bg-zinc-700"
+            className="flex items-center gap-2 rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm font-medium text-zinc-200 hover:bg-zinc-800"
           >
             <PackageX size={18} />
-            <span className="hidden sm:inline">Acabou algo?</span>
+            <span className="hidden sm:inline">Itens esgotados</span>
           </button>
           <button
             onClick={telaCheia}
             aria-label="Tela cheia"
-            className="rounded-lg bg-zinc-800 p-2 text-white hover:bg-zinc-700"
+            className="rounded-lg border border-zinc-800 bg-zinc-900 p-2 text-zinc-200 hover:bg-zinc-800"
           >
             <Maximize size={20} />
           </button>
           <button
             onClick={handleLogout}
-            className="flex items-center gap-2 rounded-lg bg-zinc-800 px-3 py-2 text-sm font-medium text-white hover:bg-zinc-700"
+            className="flex items-center gap-2 rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm font-medium text-zinc-200 hover:bg-zinc-800"
           >
             <LogOut size={18} />
             <span className="hidden sm:inline">Sair</span>
@@ -309,17 +302,17 @@ function ChapeiroPageContent() {
 
       <main className="p-4 sm:p-6">
         {loading ? (
-          <p className="py-12 text-center text-2xl text-zinc-400">Carregando pedidos...</p>
+          <p className="py-12 text-center text-2xl text-zinc-400">Carregando pedidos…</p>
         ) : fila.length === 0 ? (
           <div className="flex min-h-[60vh] items-center justify-center">
             <div className="text-center">
               <ChefHat size={64} className="mx-auto mb-4 text-zinc-700" />
               <p className="text-3xl font-bold text-zinc-500">Nenhum pedido na fila</p>
-              <p className="mt-2 text-lg text-zinc-600">Aguardando novos pedidos...</p>
+              <p className="mt-2 text-lg text-zinc-600">Os pedidos novos aparecem aqui com aviso sonoro.</p>
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+          <div className="grid grid-cols-1 items-start gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
             {fila.map((pedido, posicao) => {
               const isNovo = pedido.status === "NOVO";
               const minutos = minutosDesde(pedido.criadoEm, agora);
@@ -328,128 +321,113 @@ function ChapeiroPageContent() {
               const retirada = pedido.tipoEntrega === "RETIRADA";
               const aguardandoConfirmacao = confirmando === pedido.id;
 
-              const borda = atrasado
-                ? "border-red-500 bg-red-500/10"
-                : isNovo
-                  ? "border-yellow-500 bg-yellow-500/10"
-                  : alerta
-                    ? "border-orange-400 bg-orange-500/10"
-                    : "border-blue-500 bg-blue-500/10";
+              // A cor do topo do ticket diz há quanto tempo o pedido espera.
+              const topo = atrasado ? "bg-red-800" : alerta ? "bg-amber-700" : "bg-zinc-800";
 
               return (
-                <div
+                <article
                   key={pedido.id}
-                  className={`flex flex-col rounded-2xl border-4 p-4 shadow-xl transition-all ${borda}`}
+                  className={`flex flex-col overflow-hidden rounded-xl border bg-zinc-900 ${
+                    isNovo ? "border-yellow-400/70" : "border-zinc-800"
+                  }`}
                 >
-                  <div className="mb-3 flex items-start justify-between gap-2">
-                    <div>
-                      <p className="text-4xl font-black sm:text-5xl">#{pedido.numero}</p>
-                      <p className="mt-1 flex items-center gap-1 text-base font-bold">
-                        {retirada ? (
-                          <span className="flex items-center gap-1 text-sky-300">
-                            <Store size={18} /> RETIRADA
-                          </span>
-                        ) : (
-                          <span className="flex items-center gap-1 text-zinc-300">
-                            <Bike size={18} /> ENTREGA
-                          </span>
-                        )}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p
-                        className={`font-mono text-3xl font-black tabular-nums ${
-                          atrasado ? "text-red-400" : alerta ? "text-orange-300" : "text-zinc-200"
-                        }`}
-                      >
-                        {minutos} min
-                      </p>
-                      <p className="text-xs uppercase tracking-wide text-zinc-400">
-                        {posicao === 0 ? "próximo" : `${posicao + 1}º da fila`}
-                      </p>
-                      <span
-                        className={`mt-1 inline-block rounded-full px-3 py-1 text-sm font-bold ${
-                          // Só a etiqueta pisca: piscar o card inteiro apagava o texto
-                          isNovo
-                            ? "animate-pulse-slow bg-yellow-500 text-zinc-900"
-                            : "bg-blue-500 text-white"
-                        }`}
-                      >
-                        {isNovo ? "Novo" : "Preparando"}
-                      </span>
-                    </div>
+                  <header className={`flex items-center justify-between px-4 py-3 ${topo}`}>
+                    <p className="text-3xl font-extrabold tracking-tight">#{pedido.numero}</p>
+                    <p className="font-mono text-2xl font-bold tabular-nums">{minutos} min</p>
+                  </header>
+
+                  <div className="flex items-center gap-2 border-b border-zinc-800 px-4 py-2 text-xs font-semibold uppercase tracking-wide">
+                    <span
+                      className={`rounded px-2 py-0.5 ${
+                        // Só a etiqueta pisca: piscar o card inteiro apagava o texto
+                        isNovo ? "animate-pulse-slow bg-yellow-400 text-zinc-900" : "bg-blue-600 text-white"
+                      }`}
+                    >
+                      {isNovo ? "Novo" : "Em preparo"}
+                    </span>
+                    <span className={`flex items-center gap-1 rounded px-2 py-0.5 ${retirada ? "bg-sky-900 text-sky-200" : "bg-zinc-800 text-zinc-300"}`}>
+                      {retirada ? <Store size={14} /> : <Bike size={14} />}
+                      {retirada ? "Retirada" : "Entrega"}
+                    </span>
+                    <span className="ml-auto text-zinc-400">
+                      {posicao === 0 ? "Próximo" : `${posicao + 1}º da fila`}
+                    </span>
                   </div>
 
-                  <div className="mb-3 flex-1 space-y-2 border-t border-zinc-700 pt-3">
+                  <ul className="flex-1 space-y-3 px-4 py-3">
                     {pedido.itens.map((item) => (
-                      <div key={item.id} className="text-xl">
-                        <p className="font-bold">
-                          <span className="text-primary-400">{item.quantidade}x</span>{" "}
-                          {item.nomeProdutoSnapshot}
-                          {item.nomeVarianteSnapshot && (
-                            <span className="text-primary-300"> — {item.nomeVarianteSnapshot}</span>
+                      <li key={item.id} className="flex gap-3 text-xl">
+                        <span className="min-w-[2.5rem] font-mono font-bold text-orange-400">{item.quantidade}×</span>
+                        <div className="min-w-0">
+                          <p className="font-semibold leading-tight">
+                            {item.nomeProdutoSnapshot}
+                            {item.nomeVarianteSnapshot && (
+                              <span className="font-normal text-zinc-400"> · {item.nomeVarianteSnapshot}</span>
+                            )}
+                          </p>
+                          {item.personalizacoes && (
+                            <div className="mt-1 space-y-0.5 text-base">
+                              {item.personalizacoes.removidos.length > 0 && (
+                                <p className="font-semibold text-red-400">
+                                  Sem {item.personalizacoes.removidos.join(", ")}
+                                </p>
+                              )}
+                              {item.personalizacoes.adicionados.length > 0 && (
+                                <p className="font-semibold text-green-400">
+                                  + {item.personalizacoes.adicionados.map((a) => a.nome).join(", ")}
+                                </p>
+                              )}
+                              {item.personalizacoes.observacao && (
+                                <p className="font-semibold text-yellow-300">
+                                  Obs.: {item.personalizacoes.observacao}
+                                </p>
+                              )}
+                            </div>
                           )}
-                        </p>
-                        {item.personalizacoes && (
-                          <div className="ml-6 text-lg">
-                            {item.personalizacoes.removidos.length > 0 && (
-                              <p className="font-semibold text-red-400">
-                                ✗ SEM: {item.personalizacoes.removidos.join(", ")}
-                              </p>
-                            )}
-                            {item.personalizacoes.adicionados.length > 0 && (
-                              <p className="font-semibold text-green-400">
-                                + {item.personalizacoes.adicionados.map((a) => a.nome).join(", ")}
-                              </p>
-                            )}
-                            {item.personalizacoes.observacao && (
-                              <p className="font-semibold text-yellow-300">
-                                ➜ {item.personalizacoes.observacao}
-                              </p>
-                            )}
-                          </div>
-                        )}
-                      </div>
+                        </div>
+                      </li>
                     ))}
-                  </div>
+                  </ul>
 
                   {pedido.obs && (
-                    <div className="mb-3 flex items-start gap-2 rounded-lg bg-yellow-500/20 px-3 py-2">
-                      <MessageSquareWarning size={20} className="mt-0.5 shrink-0 text-yellow-300" />
-                      <p className="text-lg font-semibold text-yellow-200">{pedido.obs}</p>
+                    <div className="mx-4 mb-3 flex items-start gap-2 rounded-lg bg-yellow-500/15 px-3 py-2">
+                      <MessageSquareWarning size={18} className="mt-0.5 shrink-0 text-yellow-300" />
+                      <p className="text-base font-semibold text-yellow-200">{pedido.obs}</p>
                     </div>
                   )}
 
-                  <button
-                    onClick={() => avancar(pedido)}
-                    disabled={acting === pedido.id}
-                    className={`flex w-full items-center justify-center gap-2 rounded-xl py-5 text-2xl font-bold transition-colors disabled:opacity-60 ${
-                      aguardandoConfirmacao
-                        ? "bg-green-500 text-white ring-4 ring-green-300"
-                        : isNovo
-                          ? "bg-yellow-500 text-zinc-900 hover:bg-yellow-400"
-                          : "bg-blue-500 text-white hover:bg-blue-400"
-                    }`}
-                  >
-                    {acting === pedido.id ? (
-                      "..."
-                    ) : isNovo ? (
-                      <>
-                        <ChefHat size={26} /> Iniciar preparo
-                      </>
-                    ) : aguardandoConfirmacao ? (
-                      <>Toque de novo para confirmar</>
-                    ) : retirada ? (
-                      <>
-                        <Bell size={26} /> Pronto p/ retirada
-                      </>
-                    ) : (
-                      <>
-                        <Bike size={26} /> Pronto / Saiu
-                      </>
-                    )}
-                  </button>
-                </div>
+                  <div className="p-4 pt-1">
+                    <button
+                      onClick={() => avancar(pedido)}
+                      disabled={acting === pedido.id}
+                      className={`flex h-14 w-full items-center justify-center gap-2 rounded-lg text-xl font-bold transition-colors disabled:opacity-60 ${
+                        aguardandoConfirmacao
+                          ? "bg-white text-zinc-900 ring-4 ring-green-400"
+                          : isNovo
+                            ? "bg-yellow-400 text-zinc-900 hover:bg-yellow-300"
+                            : "bg-green-500 text-zinc-950 hover:bg-green-400"
+                      }`}
+                    >
+                      {acting === pedido.id ? (
+                        "..."
+                      ) : isNovo ? (
+                        <>
+                          <ChefHat size={22} /> Iniciar preparo
+                        </>
+                      ) : aguardandoConfirmacao ? (
+                        <>Toque de novo para confirmar</>
+                      ) : retirada ? (
+                        <>
+                          <Bell size={22} /> Pronto para retirada
+                        </>
+                      ) : (
+                        <>
+                          <Bike size={22} /> Pronto · saiu para entrega
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </article>
               );
             })}
           </div>

@@ -85,7 +85,7 @@ function LojaContent() {
       setForm(paraForm(cfg));
       setBairros(lista);
     } catch (err) {
-      showToast(erroApi(err, "Erro ao carregar configuração da loja"), "error");
+      showToast(erroApi(err, "Não foi possível carregar a configuração da loja."), "error");
     }
   }, [showToast]);
 
@@ -102,7 +102,7 @@ function LojaContent() {
       setConfig(data);
       showToast(data.aberta ? "Loja aberta para pedidos" : "Loja fechada para pedidos", "success");
     } catch (err) {
-      showToast(erroApi(err, "Erro ao alterar a loja"), "error");
+      showToast(erroApi(err, "Não foi possível alterar a loja."), "error");
     } finally {
       setMudandoModo(false);
     }
@@ -133,7 +133,7 @@ function LojaContent() {
       setForm(paraForm(data));
       showToast("Configuração salva", "success");
     } catch (err) {
-      showToast(erroApi(err, "Erro ao salvar"), "error");
+      showToast(erroApi(err, "Não foi possível salvar."), "error");
     } finally {
       setSalvando(false);
     }
@@ -167,7 +167,7 @@ function LojaContent() {
       setBairros((b) => [...b, data].sort((x, y) => x.nome.localeCompare(y.nome)));
       setNovoBairro({ nome: "", taxa: "" });
     } catch (err) {
-      showToast(erroApi(err, "Erro ao cadastrar bairro"), "error");
+      showToast(erroApi(err, "Não foi possível cadastrar o bairro."), "error");
     }
   };
 
@@ -182,7 +182,7 @@ function LojaContent() {
       );
       setBairros((b) => b.map((x) => (x.id === data.id ? data : x)));
     } catch (err) {
-      showToast(erroApi(err, "Erro ao atualizar bairro"), "error");
+      showToast(erroApi(err, "Não foi possível atualizar o bairro."), "error");
     }
   };
 
@@ -192,7 +192,7 @@ function LojaContent() {
       await api.delete(`/admin/loja/bairros/${bairro.id}`);
       setBairros((b) => b.filter((x) => x.id !== bairro.id));
     } catch (err) {
-      showToast(erroApi(err, "Erro ao remover bairro"), "error");
+      showToast(erroApi(err, "Não foi possível remover o bairro."), "error");
     }
   };
 
@@ -212,7 +212,6 @@ function LojaContent() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
-      <ControleMovimento />
 
       {!config.whatsappLoja && (
         <div className="rounded-xl border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-900">
@@ -540,7 +539,7 @@ function LojaContent() {
 export default function LojaPage() {
   return (
     <ProtectedRoute allowedProfiles={["ADMIN", "ATENDENTE"]}>
-      <PainelShell title="Loja">
+      <PainelShell title="Loja e horários" actions={<ControleMovimento />}>
         <LojaContent />
       </PainelShell>
     </ProtectedRoute>

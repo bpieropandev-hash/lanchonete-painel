@@ -27,7 +27,7 @@ function EntregadoresContent() {
       const { data } = await api.get("/admin/entregadores");
       setEntregadores(Array.isArray(data) ? data : []);
     } catch {
-      showToast("Erro ao carregar entregadores", "error");
+      showToast("Não foi possível carregar os entregadores.", "error");
     } finally {
       setLoading(false);
     }
@@ -44,7 +44,7 @@ function EntregadoresContent() {
         prev.map((x) => (x.id === e.id ? { ...x, ativo: !x.ativo } : x))
       );
     } catch {
-      showToast("Erro ao alterar entregador", "error");
+      showToast("Não foi possível alterar o entregador.", "error");
     }
   };
 
@@ -59,7 +59,7 @@ function EntregadoresContent() {
               setModalOpen(true);
             }}
           >
-            Novo Entregador
+            Novo entregador
           </Button>
         </div>
       )}

@@ -62,7 +62,7 @@ export function IngredienteModal({
       onSaved();
       onClose();
     } catch {
-      showToast("Erro ao salvar ingrediente", "error");
+      showToast("Não foi possível salvar o ingrediente.", "error");
     } finally {
       setSubmitting(false);
     }
@@ -72,7 +72,7 @@ export function IngredienteModal({
     <Modal
       open={open}
       onClose={onClose}
-      title={ingrediente ? "Editar Ingrediente" : "Novo Ingrediente"}
+      title={ingrediente ? "Editar ingrediente" : "Novo ingrediente"}
       size="sm"
       footer={
         <div className="flex gap-2">
