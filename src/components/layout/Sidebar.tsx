@@ -21,12 +21,14 @@ import type { PerfilUsuario } from "@/types";
 import { perfilLabel } from "@/lib/format";
 import { getDefaultRoute } from "@/lib/painel-routes";
 import { SenhaModal } from "@/components/usuarios/SenhaModal";
+import { iniciaisLoja, nomeCurtoLoja } from "@/lib/marca";
 
 interface NavItem {
   href: string;
   label: string;
-  icon: React.ComponentType<{ size?: number | string }>;
+  icon: React.ComponentType<{ size?: number | string; strokeWidth?: number }>;
   profiles: PerfilUsuario[];
+  grupo: "operacao" | "gestao";
   badge?: boolean;
 }
 
@@ -36,43 +38,50 @@ const items: NavItem[] = [
     label: "Pedidos",
     icon: ClipboardList,
     profiles: ["ADMIN", "ATENDENTE"],
+    grupo: "operacao",
     badge: true,
   },
   {
     href: "/chapeiro",
-    label: "Chapeiro",
+    label: "Cozinha",
     icon: ChefHat,
     profiles: ["ADMIN", "CHAPEIRO"],
+    grupo: "operacao",
   },
   {
     href: "/loja",
-    label: "Loja",
+    label: "Loja e horários",
     icon: Store,
     profiles: ["ADMIN", "ATENDENTE"],
+    grupo: "gestao",
   },
   {
     href: "/cardapio",
     label: "Cardápio",
     icon: MenuIcon,
     profiles: ["ADMIN", "ATENDENTE"],
+    grupo: "gestao",
   },
   {
     href: "/entregadores",
     label: "Entregadores",
     icon: Bike,
     profiles: ["ADMIN", "ATENDENTE"],
+    grupo: "gestao",
   },
   {
     href: "/caixa",
     label: "Caixa",
     icon: DollarSign,
     profiles: ["ADMIN", "ATENDENTE"],
+    grupo: "operacao",
   },
   {
     href: "/usuarios",
     label: "Usuários",
     icon: Users,
     profiles: ["ADMIN"],
+    grupo: "gestao",
   },
 ];
 
@@ -93,6 +102,11 @@ export function Sidebar({ open, onClose }: SidebarProps) {
     it.profiles.includes(funcionario.perfil)
   );
 
+  const grupos: { id: NavItem["grupo"]; titulo: string }[] = [
+    { id: "operacao", titulo: "Operação" },
+    { id: "gestao", titulo: "Gestão" },
+  ];
+
   return (
     <>
       {open && (
@@ -102,87 +116,105 @@ export function Sidebar({ open, onClose }: SidebarProps) {
         />
       )}
       <aside
-        className={`fixed left-0 top-0 z-40 flex h-full w-64 flex-col border-r border-gray-200 bg-white transition-transform lg:translate-x-0 ${
+        className={`fixed left-0 top-0 z-40 flex h-full w-60 flex-col border-r border-gray-200 bg-gray-50 transition-transform lg:translate-x-0 ${
           open ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <div className="flex items-center justify-between border-b border-gray-200 px-5 py-4">
+        <div className="flex items-center justify-between gap-2 p-3">
           <Link
             href={getDefaultRoute(funcionario.perfil)}
-            className="flex items-center gap-2"
+            className="flex min-w-0 flex-1 items-center gap-2.5 rounded-lg border border-gray-200 bg-white p-2"
           >
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary-500 text-white">
-              <ChefHat size={20} />
-            </div>
-            <span className="text-base font-bold text-gray-900">
-              Painel
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary-500 text-xs font-bold text-white">
+              {iniciaisLoja()}
+            </span>
+            <span className="min-w-0">
+              <span className="block truncate text-sm font-semibold text-gray-900">{nomeCurtoLoja()}</span>
+              <span className="block text-xs text-gray-500">Painel da loja</span>
             </span>
           </Link>
           <button
             onClick={onClose}
-            className="rounded-lg p-1 text-gray-500 hover:bg-gray-100 lg:hidden"
+            className="rounded-lg p-1.5 text-gray-500 hover:bg-gray-200 lg:hidden"
             aria-label="Fechar menu"
           >
-            <X size={20} />
+            <X size={18} />
           </button>
         </div>
 
-        <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
-          {visibleItems.map((item) => {
-            const Icon = item.icon;
-            const active =
-              pathname === item.href || pathname.startsWith(item.href + "/");
+        <nav className="flex-1 overflow-y-auto px-3 pb-4">
+          {grupos.map((g) => {
+            const doGrupo = visibleItems.filter((it) => it.grupo === g.id);
+            if (doGrupo.length === 0) return null;
             return (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={onClose}
-                className={`flex items-center justify-between rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                  active
-                    ? "bg-primary-50 text-primary-700"
-                    : "text-gray-700 hover:bg-gray-100"
-                }`}
-              >
-                <span className="flex items-center gap-3">
-                  <Icon size={18} />
-                  {item.label}
-                </span>
-                {item.badge && novosCount > 0 && (
-                  <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-xs font-bold text-white">
-                    {novosCount}
-                  </span>
-                )}
-              </Link>
+              <div key={g.id} className="mt-3">
+                <p className="px-2 pb-1 text-xs font-medium text-gray-500">{g.titulo}</p>
+                <div className="space-y-0.5">
+                  {doGrupo.map((item) => {
+                    const Icon = item.icon;
+                    const active = pathname === item.href || pathname.startsWith(item.href + "/");
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        onClick={onClose}
+                        className={`flex items-center justify-between rounded-md px-2 py-1.5 text-sm transition-colors ${
+                          active
+                            ? "bg-white font-medium text-gray-900 shadow-sm ring-1 ring-gray-200"
+                            : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                        }`}
+                      >
+                        <span className="flex items-center gap-2.5">
+                          <Icon size={16} strokeWidth={1.8} />
+                          {item.label}
+                        </span>
+                        {item.badge && novosCount > 0 && (
+                          <span className="flex h-5 min-w-5 items-center justify-center rounded bg-primary-500 px-1.5 text-xs font-semibold text-white">
+                            {novosCount}
+                          </span>
+                        )}
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
             );
           })}
         </nav>
 
         <div className="border-t border-gray-200 p-3">
-          <div className="mb-2 rounded-lg bg-gray-50 px-3 py-2">
-            <p className="truncate text-sm font-semibold text-gray-900">
-              {funcionario.nome}
-            </p>
-            <p className="text-xs text-gray-500">
-              {perfilLabel(funcionario.perfil)}
-            </p>
+          <div className="flex items-center gap-2.5 px-1 py-1">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-200 text-xs font-semibold text-gray-700">
+              {funcionario.nome
+                .split(/\s+/)
+                .slice(0, 2)
+                .map((p) => p[0]?.toUpperCase() ?? "")
+                .join("")}
+            </span>
+            <div className="min-w-0">
+              <p className="truncate text-sm font-medium text-gray-900">{funcionario.nome}</p>
+              <p className="text-xs text-gray-500">{perfilLabel(funcionario.perfil)}</p>
+            </div>
           </div>
-          <button
-            onClick={() => setSenhaAberta(true)}
-            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
-          >
-            <KeyRound size={18} />
-            Alterar minha senha
-          </button>
-          <button
-            onClick={() => {
-              logout();
-              window.location.href = "/login";
-            }}
-            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50"
-          >
-            <LogOut size={18} />
-            Sair
-          </button>
+          <div className="mt-2 flex gap-1">
+            <button
+              onClick={() => setSenhaAberta(true)}
+              className="flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-md px-1.5 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+            >
+              <KeyRound size={14} />
+              Alterar senha
+            </button>
+            <button
+              onClick={() => {
+                logout();
+                window.location.href = "/login";
+              }}
+              className="flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-md px-1.5 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-100 hover:text-red-600"
+            >
+              <LogOut size={14} />
+              Sair
+            </button>
+          </div>
         </div>
       </aside>
       <SenhaModal

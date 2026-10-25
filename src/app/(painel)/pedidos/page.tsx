@@ -6,6 +6,7 @@ import { PainelShell } from "@/components/layout/PainelShell";
 import { PedidoCard } from "@/components/pedidos/PedidoCard";
 import { PedidoDetalheModal } from "@/components/pedidos/PedidoDetalheModal";
 import { ControleMovimento } from "@/components/loja/ControleMovimento";
+import { formatBRL } from "@/lib/format";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { api } from "@/lib/api";
 import { getPedidosSocket, disconnectPedidosSocket } from "@/lib/socket";
@@ -14,25 +15,23 @@ import { playNotification } from "@/lib/sound";
 import { useToastStore } from "@/store/toastStore";
 import type { Pedido, StatusPedido } from "@/types";
 
-const COLUNAS: { status: StatusPedido[]; label: string; color: string }[] = [
-  {
-    status: ["AGUARDANDO_CONFIRMACAO"],
-    label: "Aguardando WhatsApp",
-    color: "bg-emerald-100 text-emerald-900 border-emerald-300",
-  },
-  { status: ["NOVO"], label: "Novos", color: "bg-blue-100 text-blue-900 border-blue-300" },
-  { status: ["PREPARANDO"], label: "Preparando", color: "bg-yellow-100 text-yellow-900 border-yellow-300" },
-  {
-    status: ["SAIU_ENTREGA", "PRONTO"],
-    label: "Saiu p/ entrega · Aguardando retirada",
-    color: "bg-purple-100 text-purple-900 border-purple-300",
-  },
-  { status: ["ENTREGUE"], label: "Finalizados (expediente)", color: "bg-green-100 text-green-900 border-green-300" },
+const COLUNAS: { status: StatusPedido[]; label: string; ponto: string }[] = [
+  { status: ["AGUARDANDO_CONFIRMACAO"], label: "Aguardando confirmação", ponto: "bg-emerald-500" },
+  { status: ["NOVO"], label: "Novos", ponto: "bg-blue-500" },
+  { status: ["PREPARANDO"], label: "Em preparo", ponto: "bg-amber-500" },
+  { status: ["SAIU_ENTREGA", "PRONTO"], label: "Prontos e em entrega", ponto: "bg-violet-500" },
+  { status: ["ENTREGUE"], label: "Concluídos", ponto: "bg-gray-400" },
 ];
+
+function minutosDesde(iso: string, agora: number) {
+  return Math.max(0, Math.floor((agora - new Date(iso).getTime()) / 60_000));
+}
 
 function PedidosPageContent() {
   const [pedidos, setPedidos] = useState<Pedido[]>([]);
+  const [cancelados, setCancelados] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [agora, setAgora] = useState(() => Date.now());
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const setNovosCount = useNotificacaoStore((s) => s.setNovosCount);
   const showToast = useToastStore((s) => s.show);
@@ -63,8 +62,9 @@ function PedidosPageContent() {
       } while (pagina <= totalPaginas);
 
       setPedidos(acumulado.filter((p) => p.status !== "CANCELADO"));
+      setCancelados(acumulado.filter((p) => p.status === "CANCELADO").length);
     } catch {
-      showToast("Erro ao carregar pedidos", "error");
+      showToast("Não foi possível carregar os pedidos.", "error");
     } finally {
       setLoading(false);
     }
@@ -73,6 +73,12 @@ function PedidosPageContent() {
   useEffect(() => {
     loadPedidos();
   }, [loadPedidos]);
+
+  // Atualiza o tempo de espera dos cards a cada 30 s.
+  useEffect(() => {
+    const timer = setInterval(() => setAgora(Date.now()), 30_000);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     const novos = pedidos.filter(
@@ -168,24 +174,41 @@ function PedidosPageContent() {
     );
   }
 
+  // Números do expediente com o que já está na tela. "Aguardando confirmação"
+  // fica de fora: ainda pode expirar sem virar venda.
+  const validos = pedidos.filter((p) => p.status !== "AGUARDANDO_CONFIRMACAO");
+  const totalVendido = validos.reduce((acc, p) => acc + parseFloat(p.total), 0);
+  const indicadores = [
+    { rotulo: "Pedidos no expediente", valor: String(validos.length) },
+    { rotulo: "Total em pedidos", valor: formatBRL(totalVendido) },
+    { rotulo: "Ticket médio", valor: validos.length ? formatBRL(totalVendido / validos.length) : "—" },
+    { rotulo: "Cancelados", valor: String(cancelados) },
+  ];
+
   return (
     <>
-      <div className="mb-4">
-        <ControleMovimento />
-      </div>
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
+      <dl className="mb-5 grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-gray-200 bg-gray-200 lg:grid-cols-4">
+        {indicadores.map((i) => (
+          <div key={i.rotulo} className="bg-white px-4 py-3">
+            <dt className="text-xs text-gray-500">{i.rotulo}</dt>
+            <dd className="mt-0.5 text-xl font-semibold tracking-tight text-gray-900">{i.valor}</dd>
+          </div>
+        ))}
+      </dl>
+
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-5">
         {COLUNAS.map((col) => {
           const itens = pedidos.filter((p) => col.status.includes(p.status));
           return (
-            <div key={col.label} className="flex flex-col">
-              <div
-                className={`mb-3 rounded-lg border-2 px-3 py-2 text-sm font-bold ${col.color}`}
-              >
-                {col.label} ({itens.length})
-              </div>
+            <section key={col.label} className="flex flex-col rounded-lg bg-gray-100 p-2 xl:min-h-[calc(100vh-14rem)]">
+              <h2 className="flex items-center gap-2 px-1.5 pb-2 pt-1 text-sm font-semibold text-gray-800">
+                <span className={`h-2 w-2 rounded-sm ${col.ponto}`} />
+                {col.label}
+                <span className="font-normal text-gray-500">{itens.length}</span>
+              </h2>
               <div className="space-y-2">
                 {itens.length === 0 ? (
-                  <p className="rounded-lg border-2 border-dashed border-gray-200 px-3 py-6 text-center text-xs text-gray-400">
+                  <p className="rounded-lg border border-dashed border-gray-300 px-3 py-5 text-center text-xs text-gray-400">
                     Nenhum pedido
                   </p>
                 ) : (
@@ -193,12 +216,13 @@ function PedidosPageContent() {
                     <PedidoCard
                       key={pedido.id}
                       pedido={pedido}
+                      minutos={minutosDesde(pedido.criadoEm, agora)}
                       onClick={() => setSelectedId(pedido.id)}
                     />
                   ))
                 )}
               </div>
-            </div>
+            </section>
           );
         })}
       </div>
@@ -216,7 +240,7 @@ function PedidosPageContent() {
 export default function PedidosPage() {
   return (
     <ProtectedRoute allowedProfiles={["ADMIN", "ATENDENTE"]}>
-      <PainelShell title="Pedidos">
+      <PainelShell title="Pedidos" subtitle="Expediente atual" actions={<ControleMovimento />}>
         <PedidosPageContent />
       </PainelShell>
     </ProtectedRoute>

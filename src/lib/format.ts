@@ -76,10 +76,10 @@ export function tempoDesde(date: string | Date): string {
 
 export function statusLabel(status: string): string {
   const labels: Record<string, string> = {
-    AGUARDANDO_CONFIRMACAO: "Aguardando WhatsApp",
+    AGUARDANDO_CONFIRMACAO: "Aguardando confirmação",
     NOVO: "Novo",
-    PREPARANDO: "Preparando",
-    PRONTO: "Pronto p/ retirada",
+    PREPARANDO: "Em preparo",
+    PRONTO: "Pronto para retirada",
     SAIU_ENTREGA: "Saiu para entrega",
     ENTREGUE: "Entregue",
     CANCELADO: "Cancelado",
@@ -89,7 +89,7 @@ export function statusLabel(status: string): string {
 
 export function tipoPagamentoLabel(tipo: string): string {
   const labels: Record<string, string> = {
-    PIX: "PIX",
+    PIX: "Pix",
     DINHEIRO: "Dinheiro",
     CARTAO: "Cartão",
   };

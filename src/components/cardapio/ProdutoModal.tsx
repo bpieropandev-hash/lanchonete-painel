@@ -158,7 +158,7 @@ export function ProdutoModal({
       setValue("fotoUrl", data.url, { shouldValidate: true });
       showToast("Foto enviada", "success");
     } catch {
-      showToast("Erro ao enviar foto", "error");
+      showToast("Não foi possível enviar a foto.", "error");
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -216,7 +216,7 @@ export function ProdutoModal({
       onSaved();
       onClose();
     } catch {
-      showToast("Erro ao salvar produto", "error");
+      showToast("Não foi possível salvar o produto.", "error");
     } finally {
       setSubmitting(false);
     }
@@ -226,7 +226,7 @@ export function ProdutoModal({
     <Modal
       open={open}
       onClose={onClose}
-      title={produto ? "Editar Produto" : "Novo Produto"}
+      title={produto ? "Editar produto" : "Novo produto"}
       size="lg"
       footer={
         <div className="flex gap-2">

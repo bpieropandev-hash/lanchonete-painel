@@ -28,7 +28,7 @@ function UsuariosContent() {
       const { data } = await api.get("/usuarios");
       setUsuarios(Array.isArray(data) ? data : []);
     } catch {
-      showToast("Erro ao carregar usuários", "error");
+      showToast("Não foi possível carregar os usuários.", "error");
     } finally {
       setLoading(false);
     }
@@ -45,7 +45,7 @@ function UsuariosContent() {
         prev.map((x) => (x.id === u.id ? { ...x, ativo: !x.ativo } : x))
       );
     } catch {
-      showToast("Erro ao alterar usuário", "error");
+      showToast("Não foi possível alterar o usuário.", "error");
     }
   };
 
@@ -59,7 +59,7 @@ function UsuariosContent() {
             setModalOpen(true);
           }}
         >
-          Novo Usuário
+          Novo usuário
         </Button>
       </div>
 

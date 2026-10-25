@@ -62,7 +62,7 @@ function MinhaSenhaModal({ open, onClose }: { open: boolean; onClose: () => void
       showToast("Senha alterada. Outros aparelhos precisarão entrar de novo.", "success");
       onClose();
     } catch (err) {
-      showToast(mensagemErroApi(err, "Erro ao alterar senha. Verifique a senha atual."), "error");
+      showToast(mensagemErroApi(err, "Não foi possível alterar a senha. Confira a senha atual."), "error");
     } finally {
       setSubmitting(false);
     }
@@ -87,21 +87,21 @@ function MinhaSenhaModal({ open, onClose }: { open: boolean; onClose: () => void
     >
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <Input
-          label="Senha Atual"
+          label="Senha atual"
           type="password"
           autoComplete="current-password"
           {...register("senhaAtual")}
           error={errors.senhaAtual?.message}
         />
         <Input
-          label="Nova Senha"
+          label="Nova senha"
           type="password"
           autoComplete="new-password"
           {...register("novaSenha")}
           error={errors.novaSenha?.message}
         />
         <Input
-          label="Confirmar Nova Senha"
+          label="Confirmar nova senha"
           type="password"
           autoComplete="new-password"
           {...register("confirmar")}
@@ -134,7 +134,7 @@ function RedefinirSenhaModal({ open, onClose, usuarioId, usuarioNome }: SenhaMod
       showToast("Senha redefinida. As sessões do usuário foram encerradas.", "success");
       onClose();
     } catch (err) {
-      showToast(mensagemErroApi(err, "Erro ao redefinir senha."), "error");
+      showToast(mensagemErroApi(err, "Não foi possível redefinir a senha."), "error");
     } finally {
       setSubmitting(false);
     }
@@ -163,14 +163,14 @@ function RedefinirSenhaModal({ open, onClose, usuarioId, usuarioNome }: SenhaMod
           aparelhos.
         </p>
         <Input
-          label="Nova Senha"
+          label="Nova senha"
           type="password"
           autoComplete="new-password"
           {...register("novaSenha")}
           error={errors.novaSenha?.message}
         />
         <Input
-          label="Confirmar Nova Senha"
+          label="Confirmar nova senha"
           type="password"
           autoComplete="new-password"
           {...register("confirmar")}

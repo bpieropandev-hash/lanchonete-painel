@@ -5,12 +5,12 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import axios from "axios";
-import { LogIn } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { useAuthStore } from "@/store/authStore";
 import { useToastStore } from "@/store/toastStore";
 import { loginSchema, type LoginInput } from "@/lib/validators";
+import { iniciaisLoja, NOME_LOJA } from "@/lib/marca";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -40,13 +40,12 @@ export default function LoginPage() {
     setSubmitting(true);
     try {
       await login(data.email, data.senha);
-      showToast("Bem-vindo!", "success");
       router.replace("/pedidos");
     } catch (err) {
       const msg =
         axios.isAxiosError(err) && err.response?.status === 401
           ? "E-mail ou senha incorretos"
-          : "Erro ao fazer login. Tente novamente.";
+          : "Não foi possível entrar. Tente novamente.";
       showToast(msg, "error");
     } finally {
       setSubmitting(false);
@@ -54,21 +53,19 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-primary-50 via-white to-primary-100 p-4">
-      <div className="w-full max-w-md">
-        <div className="mb-6 text-center">
-          <div className="mb-3 inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-primary-500 text-white shadow-lg">
-            <LogIn size={32} />
-          </div>
-          <h1 className="text-2xl font-bold text-gray-900">Painel Interno</h1>
-          <p className="mt-1 text-sm text-gray-600">
-            Acesse com suas credenciais de funcionário
-          </p>
+    <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
+      <div className="w-full max-w-sm">
+        <div className="mb-6">
+          <span className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-primary-500 text-sm font-bold text-white">
+            {iniciaisLoja()}
+          </span>
+          <h1 className="text-xl font-semibold text-gray-900">Entrar no painel</h1>
+          <p className="mt-1 text-sm text-gray-500">{NOME_LOJA}</p>
         </div>
 
         <form
           onSubmit={handleSubmit(onSubmit)}
-          className="rounded-2xl border border-gray-200 bg-white p-6 shadow-md"
+          className="rounded-lg border border-gray-200 bg-white p-6"
         >
           <div className="space-y-4">
             <Input

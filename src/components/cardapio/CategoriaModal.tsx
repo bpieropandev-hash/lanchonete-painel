@@ -60,7 +60,7 @@ export function CategoriaModal({
       onSaved();
       onClose();
     } catch {
-      showToast("Erro ao salvar categoria", "error");
+      showToast("Não foi possível salvar a categoria.", "error");
     } finally {
       setSubmitting(false);
     }
@@ -70,7 +70,7 @@ export function CategoriaModal({
     <Modal
       open={open}
       onClose={onClose}
-      title={categoria ? "Editar Categoria" : "Nova Categoria"}
+      title={categoria ? "Editar categoria" : "Nova categoria"}
       size="sm"
       footer={
         <div className="flex gap-2">

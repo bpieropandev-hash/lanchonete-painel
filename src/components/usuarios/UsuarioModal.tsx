@@ -95,7 +95,7 @@ export function UsuarioModal({
       onSaved();
       onClose();
     } catch {
-      showToast(isEdit ? "Erro ao atualizar usuário" : "Erro ao criar usuário", "error");
+      showToast(isEdit ? "Não foi possível atualizar o usuário." : "Não foi possível criar o usuário.", "error");
     } finally {
       setSubmitting(false);
     }
@@ -105,7 +105,7 @@ export function UsuarioModal({
     <Modal
       open={open}
       onClose={onClose}
-      title={isEdit ? "Editar Usuário" : "Novo Usuário"}
+      title={isEdit ? "Editar usuário" : "Novo usuário"}
       size="sm"
       footer={
         <div className="flex gap-2">

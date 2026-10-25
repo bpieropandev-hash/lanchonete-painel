@@ -41,22 +41,18 @@ function StatCard({
   label,
   value,
   icon: Icon,
-  accent,
 }: {
   label: string;
   value: string;
   icon: React.ComponentType<{ size?: number | string; className?: string }>;
-  accent: string;
 }) {
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-      <div className="mb-2 flex items-center gap-2">
-        <div className={`rounded-lg p-2 ${accent}`}>
-          <Icon size={18} className="text-white" />
-        </div>
-        <span className="text-xs font-medium text-gray-500">{label}</span>
+    <div className="rounded-lg border border-gray-200 bg-white px-4 py-3">
+      <div className="flex items-center gap-1.5 text-xs text-gray-500">
+        <Icon size={14} className="text-gray-400" />
+        {label}
       </div>
-      <p className="text-lg font-bold text-gray-900">{value}</p>
+      <p className="mt-1 text-xl font-semibold tracking-tight text-gray-900">{value}</p>
     </div>
   );
 }
@@ -91,7 +87,7 @@ function CaixaContent() {
       const { data } = await api.get<FechamentoResponse>("/admin/caixa/hoje");
       setHoje(data);
     } catch {
-      showToast("Erro ao carregar caixa de hoje", "error");
+      showToast("Não foi possível carregar o caixa de hoje.", "error");
     } finally {
       setLoading(false);
     }
@@ -117,7 +113,7 @@ function CaixaContent() {
       showToast(
         dif && dif !== 0
           ? `Caixa fechado. Diferença no dinheiro: ${formatBRL(dif)}`
-          : "Caixa fechado com sucesso",
+          : "Caixa fechado",
         dif && dif !== 0 ? "error" : "success"
       );
       setFecharOpen(false);
@@ -134,7 +130,7 @@ function CaixaContent() {
           return handleFechar(input, true);
         }
       } else {
-        showToast(msg || "Erro ao fechar caixa", "error");
+        showToast(msg || "Não foi possível fechar o caixa.", "error");
       }
     } finally {
       setFechando(false);
@@ -148,12 +144,12 @@ function CaixaContent() {
       await api.patch(`/admin/caixa/${hoje.id}/reabrir`, {
         motivo: input.motivo,
       });
-      showToast("Caixa reaberto. Você pode fechar novamente depois.", "success");
+      showToast("Caixa reaberto. Feche de novo depois de corrigir.", "success");
       setReabrirOpen(false);
       reabrirForm.reset();
       loadHoje();
     } catch {
-      showToast("Erro ao reabrir caixa", "error");
+      showToast("Não foi possível reabrir o caixa.", "error");
     } finally {
       setReabrindo(false);
     }
@@ -168,7 +164,7 @@ function CaixaContent() {
       );
       setRelatorio(data);
     } catch {
-      showToast("Erro ao buscar relatório", "error");
+      showToast("Não foi possível carregar o relatório.", "error");
     } finally {
       setLoadingRelatorio(false);
     }
@@ -197,7 +193,7 @@ function CaixaContent() {
               leftIcon={<Lock size={16} />}
               onClick={() => setFecharOpen(true)}
             >
-              {hoje.motivoReabertura ? "Refechar Caixa" : "Fechar Caixa"}
+              {hoje.motivoReabertura ? "Fechar caixa novamente" : "Fechar caixa"}
             </Button>
           )}
           {hoje?.isFechado && (
@@ -265,46 +261,39 @@ function CaixaContent() {
         {hoje ? (
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
             <StatCard
-              label="Total Geral"
+              label="Total geral"
               value={formatBRL(hoje.totalGeral)}
               icon={DollarSign}
-              accent="bg-primary-500"
             />
             <StatCard
-              label="Total Pedidos"
+              label="Total de pedidos"
               value={String(hoje.totalPedidos)}
               icon={TrendingUp}
-              accent="bg-blue-500"
             />
             <StatCard
-              label="Ticket Médio"
+              label="Ticket médio"
               value={formatBRL(hoje.ticketMedio)}
               icon={CreditCard}
-              accent="bg-purple-500"
             />
             <StatCard
               label="Cancelados"
               value={String(hoje.pedidosCancelados)}
               icon={Lock}
-              accent="bg-red-500"
             />
             <StatCard
-              label="PIX"
+              label="Pix"
               value={formatBRL(hoje.totalPix)}
               icon={Smartphone}
-              accent="bg-green-500"
             />
             <StatCard
               label="Dinheiro"
               value={formatBRL(hoje.totalDinheiro)}
               icon={Banknote}
-              accent="bg-yellow-500"
             />
             <StatCard
               label="Cartão"
               value={formatBRL(hoje.totalCartao)}
               icon={CreditCard}
-              accent="bg-indigo-500"
             />
           </div>
         ) : (
@@ -317,7 +306,7 @@ function CaixaContent() {
         <section>
           <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-gray-900">
             <Search size={20} />
-            Relatório por Período
+            Relatório por período
           </h2>
 
           <form
@@ -325,13 +314,13 @@ function CaixaContent() {
             className="mb-4 flex flex-wrap items-end gap-3"
           >
             <Input
-              label="Data Início"
+              label="Data inicial"
               type="date"
               {...periodoForm.register("dataInicio")}
               error={periodoForm.formState.errors.dataInicio?.message}
             />
             <Input
-              label="Data Fim"
+              label="Data final"
               type="date"
               {...periodoForm.register("dataFim")}
               error={periodoForm.formState.errors.dataFim?.message}
@@ -349,52 +338,44 @@ function CaixaContent() {
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
                 <StatCard
-                  label="Total Geral"
+                  label="Total geral"
                   value={formatBRL(relatorio.totalGeral)}
                   icon={DollarSign}
-                  accent="bg-primary-500"
                 />
                 <StatCard
-                  label="Total Pedidos"
+                  label="Total de pedidos"
                   value={String(relatorio.totalPedidos)}
                   icon={TrendingUp}
-                  accent="bg-blue-500"
                 />
                 <StatCard
-                  label="Ticket Médio"
+                  label="Ticket médio"
                   value={formatBRL(relatorio.ticketMedio)}
                   icon={CreditCard}
-                  accent="bg-purple-500"
                 />
                 <StatCard
-                  label="Média Diária"
+                  label="Média diária"
                   value={formatBRL(relatorio.mediaDiaria)}
                   icon={Calendar}
-                  accent="bg-teal-500"
                 />
                 <StatCard
-                  label="PIX"
+                  label="Pix"
                   value={formatBRL(relatorio.totalPix)}
                   icon={Smartphone}
-                  accent="bg-green-500"
                 />
                 <StatCard
                   label="Dinheiro"
                   value={formatBRL(relatorio.totalDinheiro)}
                   icon={Banknote}
-                  accent="bg-yellow-500"
                 />
                 <StatCard
                   label="Cartão"
                   value={formatBRL(relatorio.totalCartao)}
                   icon={CreditCard}
-                  accent="bg-indigo-500"
                 />
                 <StatCard
                   label="Cancelados"
                   value={String(relatorio.totalCancelados)}
                   icon={Lock}
-                  accent="bg-red-500"
                 />
               </div>
 
@@ -428,7 +409,7 @@ function CaixaContent() {
                           <td className="px-3 py-2 text-gray-900">
                             {formatData(f.data)}
                           </td>
-                          <td className="px-3 py-2 font-semibold text-primary-600">
+                          <td className="px-3 py-2 font-medium text-gray-900">
                             {formatBRL(f.totalGeral)}
                           </td>
                           <td className="px-3 py-2 text-gray-600">
@@ -452,7 +433,7 @@ function CaixaContent() {
       <Modal
         open={fecharOpen}
         onClose={() => setFecharOpen(false)}
-        title="Fechar Caixa de Hoje"
+        title="Fechar caixa de hoje"
         size="sm"
         footer={
           <div className="flex gap-2">
@@ -514,7 +495,7 @@ function CaixaContent() {
       <Modal
         open={reabrirOpen}
         onClose={() => setReabrirOpen(false)}
-        title="Reabrir Caixa"
+        title="Reabrir caixa"
         size="sm"
         footer={
           <div className="flex gap-2">

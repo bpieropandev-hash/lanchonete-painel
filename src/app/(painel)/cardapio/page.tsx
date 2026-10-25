@@ -47,7 +47,7 @@ function CardapioContent() {
       setCategorias(toArr(cats.data));
       setIngredientes(toArr(ings.data));
     } catch {
-      showToast("Erro ao carregar cardápio", "error");
+      showToast("Não foi possível carregar o cardápio.", "error");
     } finally {
       setLoading(false);
     }
@@ -64,7 +64,7 @@ function CardapioContent() {
         prev.map((x) => (x.id === p.id ? { ...x, disponivel: !x.disponivel } : x))
       );
     } catch {
-      showToast("Erro ao alterar produto", "error");
+      showToast("Não foi possível alterar o produto.", "error");
     }
   };
 
@@ -75,7 +75,7 @@ function CardapioContent() {
         prev.map((x) => (x.id === c.id ? { ...x, ativo: !x.ativo } : x))
       );
     } catch {
-      showToast("Erro ao alterar categoria", "error");
+      showToast("Não foi possível alterar a categoria.", "error");
     }
   };
 
@@ -86,7 +86,7 @@ function CardapioContent() {
         prev.map((x) => (x.id === i.id ? { ...x, ativo: !x.ativo } : x))
       );
     } catch {
-      showToast("Erro ao alterar ingrediente", "error");
+      showToast("Não foi possível alterar o ingrediente.", "error");
     }
   };
 
@@ -125,7 +125,7 @@ function CardapioContent() {
                       setProdutoOpen(true);
                     }}
                   >
-                    Novo Produto
+                    Novo produto
                   </Button>
                 </div>
               )}
@@ -171,7 +171,7 @@ function CardapioContent() {
                           <td className="px-3 py-2 hidden md:table-cell text-gray-600">
                             {p.categoria?.nome || "-"}
                           </td>
-                          <td className="px-3 py-2 font-semibold text-primary-600">
+                          <td className="px-3 py-2 font-medium text-gray-900">
                             {formatBRL(p.precoBase)}
                           </td>
                           <td className="px-3 py-2">
@@ -232,7 +232,7 @@ function CardapioContent() {
                       setCategoriaOpen(true);
                     }}
                   >
-                    Nova Categoria
+                    Nova categoria
                   </Button>
                 </div>
               )}
@@ -320,7 +320,7 @@ function CardapioContent() {
                       setIngredienteOpen(true);
                     }}
                   >
-                    Novo Ingrediente
+                    Novo ingrediente
                   </Button>
                 </div>
               )}
@@ -329,7 +329,7 @@ function CardapioContent() {
                   <thead className="bg-gray-50 text-left text-xs uppercase text-gray-500">
                     <tr>
                       <th className="px-3 py-2">Nome</th>
-                      <th className="px-3 py-2">Preço Adicional</th>
+                      <th className="px-3 py-2">Preço adicional</th>
                       <th className="px-3 py-2">Removível</th>
                       <th className="px-3 py-2">Status</th>
                       <th className="px-3 py-2 text-right">Ações</th>

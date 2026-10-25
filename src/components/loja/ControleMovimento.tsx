@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import axios from "axios";
-import { Bike, Gauge, PauseCircle, PlayCircle } from "lucide-react";
+import { Bike, ChevronDown } from "lucide-react";
 import { api } from "@/lib/api";
 import { horaCurta } from "@/lib/format";
 import { useToastStore } from "@/store/toastStore";
@@ -21,13 +21,15 @@ function erroApi(err: unknown, padrao: string): string {
 }
 
 /**
- * Controles rápidos para dia de movimento: pausar pedidos por um tempo
- * (volta sozinho), somar minutos ao tempo estimado e pausar só a entrega.
+ * Controles rápidos para dia de movimento, no cabeçalho: pausar pedidos por
+ * um tempo (volta sozinho), somar minutos ao prazo e pausar só a entrega.
  * Atualiza sozinho a cada 30 s, para refletir o que outra atendente fez.
  */
-export function ControleMovimento({ compacto = false }: { compacto?: boolean }) {
+export function ControleMovimento() {
   const [loja, setLoja] = useState<ConfiguracaoLoja | null>(null);
   const [ocupado, setOcupado] = useState(false);
+  const [aberto, setAberto] = useState(false);
+  const raizRef = useRef<HTMLDivElement>(null);
   const showToast = useToastStore((s) => s.show);
 
   const carregar = useCallback(async () => {
@@ -44,6 +46,21 @@ export function ControleMovimento({ compacto = false }: { compacto?: boolean }) 
     const timer = setInterval(carregar, 30_000);
     return () => clearInterval(timer);
   }, [carregar]);
+
+  // Fecha ao clicar fora ou apertar Esc.
+  useEffect(() => {
+    if (!aberto) return;
+    const fora = (e: MouseEvent) => {
+      if (!raizRef.current?.contains(e.target as Node)) setAberto(false);
+    };
+    const esc = (e: KeyboardEvent) => e.key === "Escape" && setAberto(false);
+    document.addEventListener("mousedown", fora);
+    document.addEventListener("keydown", esc);
+    return () => {
+      document.removeEventListener("mousedown", fora);
+      document.removeEventListener("keydown", esc);
+    };
+  }, [aberto]);
 
   const executar = async (acao: () => Promise<{ data: ConfiguracaoLoja }>, sucesso: string) => {
     setOcupado(true);
@@ -64,67 +81,72 @@ export function ControleMovimento({ compacto = false }: { compacto?: boolean }) 
   const entregaPausada = !!loja.entregaPausadaAte;
 
   const estado = pausada
-    ? { cor: "border-red-300 bg-red-50 text-red-900", texto: `Pedidos pausados até ${horaCurta(loja.pausadoAte!)}` }
+    ? { ponto: "bg-red-500", texto: `Pausado até ${horaCurta(loja.pausadoAte!)}`, borda: "border-red-200 bg-red-50 text-red-800" }
     : !loja.aberta
-      ? { cor: "border-gray-300 bg-gray-50 text-gray-800", texto: "Loja fechada (horário ou modo manual)" }
-      : { cor: "border-green-300 bg-green-50 text-green-900", texto: "Recebendo pedidos" };
+      ? { ponto: "bg-gray-400", texto: "Loja fechada", borda: "border-gray-200 bg-white text-gray-700" }
+      : { ponto: "bg-green-500", texto: "Recebendo pedidos", borda: "border-green-200 bg-green-50 text-green-800" };
+
+  const opcao =
+    "whitespace-nowrap rounded-md border border-gray-200 bg-white px-2.5 py-1 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50";
+  const opcaoAtiva = "whitespace-nowrap rounded-md border border-gray-900 bg-gray-900 px-2.5 py-1 text-sm font-medium text-white";
 
   return (
-    <section
-      aria-label="Controle de movimento"
-      className={`rounded-xl border p-3 ${estado.cor} ${compacto ? "" : "shadow-sm"}`}
-    >
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-        <p className="flex items-center gap-2 text-sm font-bold">
-          {pausada ? <PauseCircle size={18} /> : <PlayCircle size={18} />}
-          {estado.texto}
-          {loja.tempoExtraMin > 0 && (
-            <span className="rounded-full bg-amber-200 px-2 py-0.5 text-xs text-amber-900">
-              +{loja.tempoExtraMin} min
-            </span>
-          )}
-          {entregaPausada && (
-            <span className="rounded-full bg-orange-200 px-2 py-0.5 text-xs text-orange-900">
-              entrega pausada até {horaCurta(loja.entregaPausadaAte!)}
-            </span>
-          )}
-        </p>
+    <div className="relative" ref={raizRef}>
+      <button
+        type="button"
+        onClick={() => setAberto((v) => !v)}
+        aria-expanded={aberto}
+        aria-haspopup="dialog"
+        className={`flex h-8 items-center gap-2 rounded-md border px-2.5 text-sm font-medium ${estado.borda}`}
+      >
+        <span className={`h-2 w-2 rounded-full ${estado.ponto}`} />
+        {estado.texto}
+        {loja.tempoExtraMin > 0 && (
+          <span className="rounded bg-amber-100 px-1.5 text-xs font-semibold text-amber-800">+{loja.tempoExtraMin} min</span>
+        )}
+        {entregaPausada && (
+          <span className="rounded bg-orange-100 px-1.5 text-xs font-semibold text-orange-800">sem entrega</span>
+        )}
+        <ChevronDown size={14} className="opacity-60" />
+      </button>
 
-        <div className="flex flex-wrap items-center gap-2 text-sm">
+      {aberto && (
+        <div
+          role="dialog"
+          aria-label="Controle de movimento"
+          className="absolute right-0 top-full z-30 mt-1.5 w-80 rounded-lg border border-gray-200 bg-white p-4 text-sm shadow-lg"
+        >
+          <p className="font-semibold text-gray-900">Pedidos pelo site</p>
           {pausada ? (
             <button
               type="button"
               disabled={ocupado}
-              onClick={() => executar(() => api.delete("/admin/loja/pausa"), "Voltamos a aceitar pedidos")}
-              className="rounded-lg bg-green-600 px-3 py-1.5 font-semibold text-white hover:bg-green-700 disabled:opacity-60"
+              onClick={() => executar(() => api.delete("/admin/loja/pausa"), "Pedidos retomados")}
+              className="mt-2 w-full rounded-md bg-gray-900 px-3 py-1.5 font-medium text-white hover:bg-gray-800 disabled:opacity-60"
             >
-              Voltar a receber agora
+              Retomar agora
             </button>
           ) : (
-            <span className="flex items-center gap-1">
-              <span className="font-medium">Pausar:</span>
+            <div className="mt-2 flex items-center gap-1.5">
+              <span className="mr-1 whitespace-nowrap text-gray-500">Pausar por</span>
               {PAUSAS.map((min) => (
                 <button
                   key={min}
                   type="button"
                   disabled={ocupado}
                   onClick={() =>
-                    executar(
-                      () => api.post("/admin/loja/pausa", { minutos: min }),
-                      `Pedidos pausados por ${min} min`
-                    )
+                    executar(() => api.post("/admin/loja/pausa", { minutos: min }), `Pedidos pausados por ${min} min`)
                   }
-                  className="rounded-lg border border-current bg-white px-2.5 py-1.5 font-semibold hover:bg-red-100 disabled:opacity-60"
+                  className={opcao}
                 >
                   {min} min
                 </button>
               ))}
-            </span>
+            </div>
           )}
 
-          <span className="flex items-center gap-1">
-            <Gauge size={16} aria-hidden="true" />
-            <span className="font-medium">Tempo extra:</span>
+          <p className="mt-4 font-semibold text-gray-900">Prazo informado ao cliente</p>
+          <div className="mt-2 flex items-center gap-1.5">
             {EXTRAS.map((min) => (
               <button
                 key={min}
@@ -134,40 +156,41 @@ export function ControleMovimento({ compacto = false }: { compacto?: boolean }) 
                 onClick={() =>
                   executar(
                     () => api.put("/admin/loja/tempo-extra", { minutos: min }),
-                    min === 0 ? "Tempo normal" : `Tempo estimado +${min} min`
+                    min === 0 ? "Prazo normal" : `Prazo +${min} min`
                   )
                 }
-                className={`rounded-lg border px-2.5 py-1.5 font-semibold disabled:cursor-default ${
-                  loja.tempoExtraMin === min
-                    ? "border-gray-900 bg-gray-900 text-white"
-                    : "border-current bg-white hover:bg-amber-100"
-                }`}
+                className={loja.tempoExtraMin === min ? opcaoAtiva : opcao}
               >
-                {min === 0 ? "normal" : `+${min}`}
+                {min === 0 ? "Normal" : `+${min} min`}
               </button>
             ))}
-          </span>
+          </div>
 
           {loja.aceitaEntrega && (
-            <button
-              type="button"
-              disabled={ocupado}
-              onClick={() =>
-                entregaPausada
-                  ? executar(() => api.delete("/admin/loja/pausa-entrega"), "Entregas retomadas")
-                  : executar(
-                      () => api.post("/admin/loja/pausa-entrega", { minutos: 60 }),
-                      "Entregas pausadas por 60 min (retirada continua)"
-                    )
-              }
-              className="flex items-center gap-1 rounded-lg border border-current bg-white px-2.5 py-1.5 font-semibold hover:bg-orange-100 disabled:opacity-60"
-            >
-              <Bike size={16} aria-hidden="true" />
-              {entregaPausada ? "Retomar entregas" : "Pausar entregas 1h"}
-            </button>
+            <>
+              <p className="mt-4 font-semibold text-gray-900">Entrega</p>
+              <button
+                type="button"
+                disabled={ocupado}
+                onClick={() =>
+                  entregaPausada
+                    ? executar(() => api.delete("/admin/loja/pausa-entrega"), "Entregas retomadas")
+                    : executar(
+                        () => api.post("/admin/loja/pausa-entrega", { minutos: 60 }),
+                        "Entregas pausadas por 1 hora. A retirada continua."
+                      )
+                }
+                className={`${opcao} mt-2 flex items-center gap-1.5`}
+              >
+                <Bike size={14} aria-hidden="true" />
+                {entregaPausada
+                  ? `Retomar entregas (pausadas até ${horaCurta(loja.entregaPausadaAte!)})`
+                  : "Pausar entregas por 1 hora"}
+              </button>
+            </>
           )}
         </div>
-      </div>
-    </section>
+      )}
+    </div>
   );
 }

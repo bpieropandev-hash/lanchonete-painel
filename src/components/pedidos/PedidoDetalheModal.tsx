@@ -41,15 +41,15 @@ type Acao = { status: StatusPedido; label: string; icon: typeof ChefHat };
 const PROXIMO_STATUS: Record<TipoEntrega, Partial<Record<StatusPedido, Acao>>> = {
   ENTREGA: {
     AGUARDANDO_CONFIRMACAO: { status: "NOVO", label: "Confirmar (WhatsApp recebido)", icon: MessageCircle },
-    NOVO: { status: "PREPARANDO", label: "Iniciar Preparo", icon: ChefHat },
-    PREPARANDO: { status: "SAIU_ENTREGA", label: "Saiu para Entrega", icon: Bike },
-    SAIU_ENTREGA: { status: "ENTREGUE", label: "Marcar como Entregue", icon: Check },
+    NOVO: { status: "PREPARANDO", label: "Iniciar preparo", icon: ChefHat },
+    PREPARANDO: { status: "SAIU_ENTREGA", label: "Saiu para entrega", icon: Bike },
+    SAIU_ENTREGA: { status: "ENTREGUE", label: "Marcar como entregue", icon: Check },
   },
   RETIRADA: {
     AGUARDANDO_CONFIRMACAO: { status: "NOVO", label: "Confirmar (WhatsApp recebido)", icon: MessageCircle },
-    NOVO: { status: "PREPARANDO", label: "Iniciar Preparo", icon: ChefHat },
-    PREPARANDO: { status: "PRONTO", label: "Pronto para Retirada", icon: Bell },
-    PRONTO: { status: "ENTREGUE", label: "Cliente Retirou", icon: Check },
+    NOVO: { status: "PREPARANDO", label: "Iniciar preparo", icon: ChefHat },
+    PREPARANDO: { status: "PRONTO", label: "Pronto para retirada", icon: Bell },
+    PRONTO: { status: "ENTREGUE", label: "Cliente retirou", icon: Check },
   },
 };
 
@@ -104,7 +104,7 @@ function PedidoDetalheContent({
     api
       .get<Pedido>(`/admin/pedidos/${pedidoId}`)
       .then((res) => { if (alive.current && own === sequence.current && res.data.id === pedidoId) setPedido(res.data); })
-      .catch(() => { if (alive.current && own === sequence.current) { setErro(true); showToast("Erro ao carregar pedido", "error"); } })
+      .catch(() => { if (alive.current && own === sequence.current) { setErro(true); showToast("Não foi possível carregar o pedido.", "error"); } })
       .finally(() => { if (alive.current && own === sequence.current) setLoading(false); });
   }, [open, pedidoId, showToast]);
 
@@ -118,7 +118,7 @@ function PedidoDetalheContent({
         setPedido(res.data);
         onUpdated(res.data);
       })
-      .catch(() => { if (alive.current && own === sequence.current) showToast("Erro ao carregar pedido", "error"); });
+      .catch(() => { if (alive.current && own === sequence.current) showToast("Não foi possível carregar o pedido.", "error"); });
   };
 
   const handleAvancar = async () => {
@@ -140,7 +140,7 @@ function PedidoDetalheContent({
       onClose();
     } catch (err) {
       if (!alive.current) return;
-      showToast(mensagemErro(err, "Erro ao atualizar status"), "error");
+      showToast(mensagemErro(err, "Não foi possível mudar o status."), "error");
     } finally {
       if (alive.current) setActing(false);
     }
@@ -164,7 +164,7 @@ function PedidoDetalheContent({
       onClose();
     } catch (err) {
       if (!alive.current) return;
-      showToast(mensagemErro(err, "Erro ao cancelar pedido"), "error");
+      showToast(mensagemErro(err, "Não foi possível cancelar o pedido."), "error");
     } finally {
       if (alive.current) setActing(false);
     }

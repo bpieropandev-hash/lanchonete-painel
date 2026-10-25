@@ -25,7 +25,7 @@ export function PainelEsgotados({ aberto, onFechar }: Props) {
       const { data } = await api.get<Produto[]>("/admin/cardapio/produtos");
       setProdutos(Array.isArray(data) ? data : []);
     } catch {
-      showToast("Erro ao carregar o cardápio", "error");
+      showToast("Não foi possível carregar o cardápio.", "error");
     }
   }, [showToast]);
 
