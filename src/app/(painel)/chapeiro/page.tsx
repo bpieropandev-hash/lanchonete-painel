@@ -473,7 +473,7 @@ function ChapeiroPageContent() {
           {recentesVisiveis.map(({ pedido, saiuEm }) => (
             <span
               key={pedido.id}
-              className="flex items-center gap-2 rounded-lg border border-zinc-800 bg-zinc-900 py-1 pl-3 pr-1 text-sm"
+              className="flex items-center gap-3 rounded-lg border border-zinc-800 bg-zinc-900 py-1.5 pl-4 pr-1.5 text-base"
             >
               <span className="font-semibold">#{pedido.numero}</span>
               <span className="text-zinc-500">{Math.max(0, Math.floor((agora - saiuEm) / 60_000))} min</span>
@@ -481,7 +481,7 @@ function ChapeiroPageContent() {
                 type="button"
                 onClick={() => desfazer(pedido)}
                 disabled={desfazendo === pedido.id}
-                className="rounded-md bg-zinc-800 px-2.5 py-1 text-xs font-semibold text-zinc-100 hover:bg-zinc-700 disabled:opacity-50"
+                className="h-10 rounded-md bg-zinc-100 px-4 text-sm font-semibold text-zinc-900 hover:bg-white disabled:opacity-50"
               >
                 {desfazendo === pedido.id ? "..." : "Desfazer"}
               </button>
