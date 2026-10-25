@@ -2,7 +2,7 @@
 
 Painel interno (Next.js 15) para atendente, chapeiro e administrador. Consome a `lanchonete-api`.
 
-Runtime Docker usa Node26/USER node, patches Debian e HEALTHCHECK, sem npm/npx/yarn. Comandos npm são para desenvolvimento/CI. Em Podman, construa com `--format docker` para preservar HEALTHCHECK.
+Runtime Docker usa a imagem distroless `gcr.io/distroless/nodejs26-debian13:nonroot` (usuário nonroot, sem shell, apt, npm/npx/yarn nem utilitários do sistema) com HEALTHCHECK. Build em `node:26-trixie-slim`. Comandos npm são para desenvolvimento/CI. Em Podman, construa com `--format docker` para preservar HEALTHCHECK.
 
 ## Rodando localmente
 
