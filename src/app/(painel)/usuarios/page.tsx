@@ -11,6 +11,7 @@ import { SenhaModal } from "@/components/usuarios/SenhaModal";
 import { api } from "@/lib/api";
 import { perfilLabel, formatDataHora } from "@/lib/format";
 import { useToastStore } from "@/store/toastStore";
+import { useAuthStore } from "@/store/authStore";
 import type { Usuario } from "@/types";
 
 function UsuariosContent() {
@@ -20,6 +21,7 @@ function UsuariosContent() {
   const [modalOpen, setModalOpen] = useState(false);
   const [senhaItem, setSenhaItem] = useState<Usuario | null>(null);
   const showToast = useToastStore((s) => s.show);
+  const meuId = useAuthStore((s) => s.funcionario?.id);
 
   const load = useCallback(async () => {
     try {
@@ -165,6 +167,7 @@ function UsuariosContent() {
       <SenhaModal
         open={!!senhaItem}
         onClose={() => setSenhaItem(null)}
+        modo={senhaItem?.id === meuId ? "propria" : "redefinir"}
         usuarioId={senhaItem?.id || null}
         usuarioNome={senhaItem?.nome || ""}
       />

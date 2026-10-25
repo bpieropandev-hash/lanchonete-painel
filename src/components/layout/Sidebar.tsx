@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -12,12 +13,14 @@ import {
   X,
   LogOut,
   Store,
+  KeyRound,
 } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import { useNotificacaoStore } from "@/store/notificacaoStore";
 import type { PerfilUsuario } from "@/types";
 import { perfilLabel } from "@/lib/format";
 import { getDefaultRoute } from "@/lib/painel-routes";
+import { SenhaModal } from "@/components/usuarios/SenhaModal";
 
 interface NavItem {
   href: string;
@@ -82,6 +85,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
   const pathname = usePathname();
   const { funcionario, logout } = useAuthStore();
   const novosCount = useNotificacaoStore((s) => s.novosCount);
+  const [senhaAberta, setSenhaAberta] = useState(false);
 
   if (!funcionario) return null;
 
@@ -163,6 +167,13 @@ export function Sidebar({ open, onClose }: SidebarProps) {
             </p>
           </div>
           <button
+            onClick={() => setSenhaAberta(true)}
+            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
+          >
+            <KeyRound size={18} />
+            Alterar minha senha
+          </button>
+          <button
             onClick={() => {
               logout();
               window.location.href = "/login";
@@ -174,6 +185,11 @@ export function Sidebar({ open, onClose }: SidebarProps) {
           </button>
         </div>
       </aside>
+      <SenhaModal
+        modo="propria"
+        open={senhaAberta}
+        onClose={() => setSenhaAberta(false)}
+      />
     </>
   );
 }
