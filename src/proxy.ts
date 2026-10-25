@@ -4,7 +4,7 @@ function origin(value: string | undefined, fallback: string): string {
   try { return new URL(value || fallback).origin; } catch { return ""; }
 }
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const nonce = btoa(crypto.randomUUID());
   const isDev = process.env.NODE_ENV !== "production";
   const api = origin(process.env.NEXT_PUBLIC_API_URL, "http://localhost:3000");
