@@ -1,6 +1,6 @@
-export const NOME_LOJA = process.env.NEXT_PUBLIC_NOME_LOJA || "Lanchonete";
+export const NOME_LOJA = process.env.NEXT_PUBLIC_NOME_LOJA || "Nelsons Burguer";
 
-/** Iniciais do nome, ignorando artigos: "Lanchonete da Tia Jú" vira "TJ". */
+/** Iniciais do nome, ignorando artigos: "Nelsons Burguer" vira "NB", "Lanchonete da Tia Jú" vira "TJ". */
 export function iniciaisLoja(nome = NOME_LOJA): string {
   const palavras = nome
     .split(/\s+/)
@@ -12,7 +12,7 @@ export function iniciaisLoja(nome = NOME_LOJA): string {
     .join("");
 }
 
-/** Nome curto para o menu: "Lanchonete da Tia Jú" vira "Tia Jú". */
+/** Nome curto para o menu: tira o tipo do negócio do começo ("Lanchonete da Tia Jú" vira "Tia Jú"). */
 export function nomeCurtoLoja(nome = NOME_LOJA): string {
   return nome.replace(/^(lanchonete|hamburgueria|restaurante|bar)\s+(d[aoe]s?\s+)?/i, "") || nome;
 }
