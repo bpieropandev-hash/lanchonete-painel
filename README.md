@@ -2,7 +2,7 @@
 
 Painel interno (Next.js 15) para atendente, chapeiro e administrador. Consome a `lanchonete-api`.
 
-Runtime Docker usa Node22/USER node, patches Debian e HEALTHCHECK, sem npm/npx/yarn. Comandos npm são para desenvolvimento/CI. Em Podman, construa com `--format docker` para preservar HEALTHCHECK.
+Runtime Docker usa Node26/USER node, patches Debian e HEALTHCHECK, sem npm/npx/yarn. Comandos npm são para desenvolvimento/CI. Em Podman, construa com `--format docker` para preservar HEALTHCHECK.
 
 ## Rodando localmente
 
@@ -38,7 +38,7 @@ No Railway: veja o guia `DEPLOY-RAILWAY.md` no repositório `lanchonete-api`.
 
 ## Build e validação de dependências (2026-10-15)
 
-Use Node.js 22. Instalação reprodutível e peers estritos:
+Use Node.js 26. Instalação reprodutível e peers estritos:
 
 ```sh
 npm ci --strict-peer-deps
