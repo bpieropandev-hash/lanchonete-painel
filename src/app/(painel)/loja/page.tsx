@@ -44,6 +44,8 @@ interface FormConfig {
   tempoEstimadoEntregaMin: string;
   tempoEstimadoRetiradaMin: string;
   whatsappLoja: string;
+  cashbackPercentual: string;
+  cashbackValidadeDias: string;
 }
 
 function paraForm(c: ConfiguracaoLoja): FormConfig {
@@ -58,6 +60,8 @@ function paraForm(c: ConfiguracaoLoja): FormConfig {
     tempoEstimadoEntregaMin: String(c.tempoEstimadoEntregaMin),
     tempoEstimadoRetiradaMin: String(c.tempoEstimadoRetiradaMin),
     whatsappLoja: c.whatsappLoja ?? "",
+    cashbackPercentual: String(c.cashbackPercentual ?? 0),
+    cashbackValidadeDias: String(c.cashbackValidadeDias ?? 60),
   };
 }
 
@@ -128,6 +132,8 @@ function LojaContent() {
         tempoEstimadoEntregaMin: parseInt(form.tempoEstimadoEntregaMin, 10) || 45,
         tempoEstimadoRetiradaMin: parseInt(form.tempoEstimadoRetiradaMin, 10) || 25,
         whatsappLoja: form.whatsappLoja.trim() || null,
+        cashbackPercentual: Math.min(30, Math.max(0, numero(form.cashbackPercentual) || 0)),
+        cashbackValidadeDias: parseInt(form.cashbackValidadeDias, 10) || 60,
       });
       setConfig(data);
       setForm(paraForm(data));
@@ -415,6 +421,33 @@ function LojaContent() {
               {label}
             </label>
           ))}
+        </div>
+        <div className="mt-5 border-t border-gray-100 pt-4">
+          <p className="text-sm font-medium text-gray-900">Cashback</p>
+          <p className="mt-0.5 text-xs text-gray-500">
+            O cliente ganha um percentual dos produtos quando o pedido é entregue e usa o saldo
+            nos próximos pedidos (precisa estar logado). Use 0 para desligar.
+          </p>
+          <div className="mt-3 grid gap-4 md:grid-cols-2">
+            <Input
+              label="Percentual devolvido (%)"
+              name="cashbackPercentual"
+              inputMode="decimal"
+              value={form.cashbackPercentual}
+              disabled={!isAdmin}
+              hint="Ex.: 5 = R$ 3,00 num pedido de R$ 60,00 em produtos."
+              onChange={(e) => setForm({ ...form, cashbackPercentual: e.target.value })}
+            />
+            <Input
+              label="Validade do saldo (dias)"
+              name="cashbackValidadeDias"
+              inputMode="numeric"
+              value={form.cashbackValidadeDias}
+              disabled={!isAdmin}
+              hint="Vale para o cashback ganho daqui pra frente."
+              onChange={(e) => setForm({ ...form, cashbackValidadeDias: e.target.value })}
+            />
+          </div>
         </div>
         <div className="mt-4">
           <Textarea

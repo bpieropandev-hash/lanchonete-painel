@@ -51,6 +51,7 @@ export function ProdutoModal({
   const [selectedIngredientes, setSelectedIngredientes] = useState<string[]>([]);
   const [selectedExtras, setSelectedExtras] = useState<string[]>([]);
   const [variantes, setVariantes] = useState<VarianteRow[]>([]);
+  const [destaque, setDestaque] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const showToast = useToastStore((s) => s.show);
 
@@ -83,6 +84,7 @@ export function ProdutoModal({
         categoriaId: produto?.categoriaId || categorias[0]?.id || "",
         ordem: produto?.ordem || 0,
       });
+      setDestaque(produto?.destaque ?? false);
       // A API devolve os vínculos em produtoIngredientes (antes lia-se um campo
       // inexistente e salvar o produto apagava todos os ingredientes).
       const vinculos = produto?.produtoIngredientes ?? [];
@@ -184,6 +186,7 @@ export function ProdutoModal({
       const payload = {
         ...data,
         fotoUrl: data.fotoUrl || undefined,
+        destaque,
       };
       let savedId: string;
       if (produto) {
@@ -276,6 +279,21 @@ export function ProdutoModal({
             error={errors.ordem?.message}
           />
         </div>
+
+        <label className="flex items-start gap-2 text-sm text-gray-700">
+          <input
+            type="checkbox"
+            checked={destaque}
+            onChange={(e) => setDestaque(e.target.checked)}
+            className="mt-0.5 h-4 w-4 rounded border-gray-300"
+          />
+          <span>
+            Mostrar em &ldquo;Mais pedidos&rdquo; no site
+            <span className="block text-xs text-gray-500">
+              Os destaques aparecem primeiro; o restante da lista vem dos mais vendidos.
+            </span>
+          </span>
+        </label>
 
         <Textarea
           label="Descrição"

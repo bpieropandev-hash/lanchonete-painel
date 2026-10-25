@@ -28,6 +28,8 @@ const ALERTA_MIN = 15;
 const ATRASO_MIN = 25;
 /** Pedido novo sem ninguém iniciar o preparo: repete o aviso sonoro. */
 const REPETIR_SOM_MS = 20_000;
+/** Por quanto tempo um pedido que saiu da fila ainda pode ser desfeito. */
+const JANELA_DESFAZER_MS = 10 * 60_000;
 /** Tempo para o segundo toque confirmar "pronto/saiu". */
 const JANELA_CONFIRMACAO_MS = 4_000;
 
@@ -44,6 +46,9 @@ function ChapeiroPageContent() {
   const [esgotadosAberto, setEsgotadosAberto] = useState(false);
   const [acting, setActing] = useState<string | null>(null);
   const [confirmando, setConfirmando] = useState<string | null>(null);
+  // Pedidos que saíram da fila por este aparelho: dá para trazer de volta.
+  const [recentes, setRecentes] = useState<{ pedido: Pedido; saiuEm: number }[]>([]);
+  const [desfazendo, setDesfazendo] = useState<string | null>(null);
   const [conectado, setConectado] = useState(true);
   const [agora, setAgora] = useState(() => Date.now());
   const showToast = useToastStore((s) => s.show);
@@ -113,6 +118,9 @@ function ChapeiroPageContent() {
 
     const onStatus = (payload: { id: string; numero: number; status: StatusPedido }) => {
       // Saiu da cozinha (pronto, saiu, cancelado...): tira da fila.
+      if (payload.status === "ENTREGUE" || payload.status === "CANCELADO") {
+        setRecentes((prev) => prev.filter((r) => r.pedido.id !== payload.id));
+      }
       if (payload.status !== "NOVO" && payload.status !== "PREPARANDO") {
         setPedidos((prev) => prev.filter((p) => p.id !== payload.id));
         if (payload.status === "CANCELADO") {
@@ -216,6 +224,7 @@ function ChapeiroPageContent() {
       await api.patch<Pedido>(`/admin/pedidos/${pedido.id}/status`, { status: next });
       if (next !== "PREPARANDO") {
         setPedidos((prev) => prev.filter((p) => p.id !== pedido.id));
+        setRecentes((prev) => [{ pedido, saiuEm: Date.now() }, ...prev.filter((r) => r.pedido.id !== pedido.id)]);
       } else {
         setPedidos((prev) => prev.map((p) => (p.id === pedido.id ? { ...p, status: next } : p)));
       }
@@ -231,6 +240,31 @@ function ChapeiroPageContent() {
       setActing(null);
     }
   };
+
+  // Pedido marcado como pronto/saiu por engano volta para "em preparo".
+  const desfazer = async (pedido: Pedido) => {
+    setDesfazendo(pedido.id);
+    try {
+      const { data } = await api.patch<Pedido>(`/admin/pedidos/${pedido.id}/status`, {
+        status: "PREPARANDO",
+      });
+      setRecentes((prev) => prev.filter((r) => r.pedido.id !== pedido.id));
+      setPedidos((prev) =>
+        prev.some((p) => p.id === pedido.id) ? prev : [...prev, { ...pedido, ...data, status: "PREPARANDO" }]
+      );
+    } catch (err) {
+      const msg =
+        axios.isAxiosError(err) && err.response?.data
+          ? (err.response.data as { message?: string }).message || "Não foi possível desfazer."
+          : "Não foi possível desfazer.";
+      showToast(msg, "error");
+      setRecentes((prev) => prev.filter((r) => r.pedido.id !== pedido.id));
+    } finally {
+      setDesfazendo(null);
+    }
+  };
+
+  const recentesVisiveis = recentes.filter((r) => agora - r.saiuEm < JANELA_DESFAZER_MS).slice(0, 5);
 
   const handleLogout = () => {
     logout();
@@ -433,6 +467,28 @@ function ChapeiroPageContent() {
           </div>
         )}
       </main>
+      {recentesVisiveis.length > 0 && (
+        <div className="sticky bottom-0 z-10 flex flex-wrap items-center gap-2 border-t border-zinc-800 bg-zinc-950/95 px-4 py-3 sm:px-6">
+          <span className="mr-1 text-sm text-zinc-400">Saíram da fila:</span>
+          {recentesVisiveis.map(({ pedido, saiuEm }) => (
+            <span
+              key={pedido.id}
+              className="flex items-center gap-2 rounded-lg border border-zinc-800 bg-zinc-900 py-1 pl-3 pr-1 text-sm"
+            >
+              <span className="font-semibold">#{pedido.numero}</span>
+              <span className="text-zinc-500">{Math.max(0, Math.floor((agora - saiuEm) / 60_000))} min</span>
+              <button
+                type="button"
+                onClick={() => desfazer(pedido)}
+                disabled={desfazendo === pedido.id}
+                className="rounded-md bg-zinc-800 px-2.5 py-1 text-xs font-semibold text-zinc-100 hover:bg-zinc-700 disabled:opacity-50"
+              >
+                {desfazendo === pedido.id ? "..." : "Desfazer"}
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
       <PainelEsgotados aberto={esgotadosAberto} onFechar={() => setEsgotadosAberto(false)} />
     </div>
   );

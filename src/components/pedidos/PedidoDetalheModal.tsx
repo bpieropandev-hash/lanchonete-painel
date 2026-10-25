@@ -258,9 +258,14 @@ function PedidoDetalheContent({
             </div>
             <div>
               <p className="text-xs font-medium text-gray-500">Total</p>
-              <p className="font-bold text-primary-600">
+              <p className="font-bold text-gray-900">
                 {formatBRL(pedido.total)}
               </p>
+              {Number(pedido.descontoCashback ?? 0) > 0 && (
+                <p className="text-xs text-gray-500">
+                  já com {formatBRL(pedido.descontoCashback!)} de cashback
+                </p>
+              )}
             </div>
           </div>
 

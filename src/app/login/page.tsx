@@ -10,13 +10,15 @@ import { Input } from "@/components/ui/Input";
 import { useAuthStore } from "@/store/authStore";
 import { useToastStore } from "@/store/toastStore";
 import { loginSchema, type LoginInput } from "@/lib/validators";
-import { iniciaisLoja, NOME_LOJA } from "@/lib/marca";
+import { LogoLoja } from "@/components/layout/LogoLoja";
+import { useMarcaStore } from "@/store/marcaStore";
 
 export default function LoginPage() {
   const router = useRouter();
   const { login, isAuthenticated, hasHydrated, hydrate } = useAuthStore();
   const showToast = useToastStore((s) => s.show);
   const [submitting, setSubmitting] = useState(false);
+  const nomeLoja = useMarcaStore((s) => s.nome);
 
   const {
     register,
@@ -56,11 +58,9 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
       <div className="w-full max-w-sm">
         <div className="mb-6">
-          <span className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-primary-500 text-sm font-bold text-white">
-            {iniciaisLoja()}
-          </span>
+          <LogoLoja className="mb-4 h-10 w-10 text-sm" />
           <h1 className="text-xl font-semibold text-gray-900">Entrar no painel</h1>
-          <p className="mt-1 text-sm text-gray-500">{NOME_LOJA}</p>
+          <p className="mt-1 text-sm text-gray-500">{nomeLoja}</p>
         </div>
 
         <form

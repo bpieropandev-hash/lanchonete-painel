@@ -14,6 +14,7 @@ import {
   LogOut,
   Store,
   KeyRound,
+  Palette,
 } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import { useNotificacaoStore } from "@/store/notificacaoStore";
@@ -21,7 +22,9 @@ import type { PerfilUsuario } from "@/types";
 import { perfilLabel } from "@/lib/format";
 import { getDefaultRoute } from "@/lib/painel-routes";
 import { SenhaModal } from "@/components/usuarios/SenhaModal";
-import { iniciaisLoja, nomeCurtoLoja } from "@/lib/marca";
+import { nomeCurtoLoja } from "@/lib/marca";
+import { useMarcaStore } from "@/store/marcaStore";
+import { LogoLoja } from "./LogoLoja";
 
 interface NavItem {
   href: string;
@@ -53,6 +56,13 @@ const items: NavItem[] = [
     label: "Loja e horários",
     icon: Store,
     profiles: ["ADMIN", "ATENDENTE"],
+    grupo: "gestao",
+  },
+  {
+    href: "/aparencia",
+    label: "Aparência",
+    icon: Palette,
+    profiles: ["ADMIN"],
     grupo: "gestao",
   },
   {
@@ -95,6 +105,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
   const { funcionario, logout } = useAuthStore();
   const novosCount = useNotificacaoStore((s) => s.novosCount);
   const [senhaAberta, setSenhaAberta] = useState(false);
+  const nomeLoja = useMarcaStore((s) => s.nome);
 
   if (!funcionario) return null;
 
@@ -125,11 +136,9 @@ export function Sidebar({ open, onClose }: SidebarProps) {
             href={getDefaultRoute(funcionario.perfil)}
             className="flex min-w-0 flex-1 items-center gap-2.5 rounded-lg border border-gray-200 bg-white p-2"
           >
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary-500 text-xs font-bold text-white">
-              {iniciaisLoja()}
-            </span>
+            <LogoLoja />
             <span className="min-w-0">
-              <span className="block truncate text-sm font-semibold text-gray-900">{nomeCurtoLoja()}</span>
+              <span className="block truncate text-sm font-semibold text-gray-900">{nomeCurtoLoja(nomeLoja)}</span>
               <span className="block text-xs text-gray-500">Painel da loja</span>
             </span>
           </Link>

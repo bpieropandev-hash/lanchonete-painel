@@ -13,7 +13,7 @@ export function proxy(request: NextRequest) {
     "default-src 'self'",
     `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${isDev ? " 'unsafe-eval'" : ""}`,
     "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data: blob: https:",
+    `img-src 'self' data: blob: https: ${api}`,
     "font-src 'self' data:",
     `connect-src 'self' ${[api, ws, ws.replace(/^http/, "ws"), "https://viacep.com.br"].filter(Boolean).join(" ")}`,
     "object-src 'none'",
