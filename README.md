@@ -2,7 +2,7 @@
 
 Painel interno (Next.js 15) para atendente, chapeiro e administrador. Consome a `lanchonete-api`.
 
-Runtime Docker usa Node22/USER node, patches Debian e HEALTHCHECK, sem npm/npx/yarn. Comandos npm são para desenvolvimento/CI. Em Podman, construa com `--format docker` para preservar HEALTHCHECK.
+Runtime Docker usa Node26/USER node, patches Debian e HEALTHCHECK, sem npm/npx/yarn. Comandos npm são para desenvolvimento/CI. Em Podman, construa com `--format docker` para preservar HEALTHCHECK.
 
 ## Rodando localmente
 
@@ -38,7 +38,7 @@ No Railway: veja o guia `DEPLOY-RAILWAY.md` no repositório `lanchonete-api`.
 
 ## Build e validação de dependências (2026-10-15)
 
-Use Node.js 22. Instalação reprodutível e peers estritos:
+Use Node.js 26. Instalação reprodutível e peers estritos:
 
 ```sh
 npm ci --strict-peer-deps
@@ -51,4 +51,4 @@ npm run build
 
 Os gates de audit falham inclusive para severidade baixa; avisos remanescentes não são ocultados. Lint não altera fontes. Actions de CI estão fixadas por SHA e recebem somente `contents: read`. Consulte `auditoria/2026-10-15/FIX_DEPENDENCIES.md` no workspace pai para versões, evidências e limitações.
 
-CSP é gerada no middleware por requisição: nonce substitui qualquer valor recebido do cliente, acompanha o header encaminhado ao render e o header da resposta. Scripts de produção não usam `unsafe-inline` ou `unsafe-eval`. O root layout lê headers para render dinâmico; isso desabilita prerender/ISR dessas páginas. API/WebSocket usam origens das variáveis `NEXT_PUBLIC_*`, e consultas CEP permitem `https://viacep.com.br`. Estilos inline continuam permitidos por compatibilidade de UI.
+CSP é gerada no proxy (`src/proxy.ts`, antigo middleware) por requisição: nonce substitui qualquer valor recebido do cliente, acompanha o header encaminhado ao render e o header da resposta. Scripts de produção não usam `unsafe-inline` ou `unsafe-eval`. O root layout lê headers para render dinâmico; isso desabilita prerender/ISR dessas páginas. API/WebSocket usam origens das variáveis `NEXT_PUBLIC_*`, e consultas CEP permitem `https://viacep.com.br`. Estilos inline continuam permitidos por compatibilidade de UI.

@@ -64,14 +64,32 @@ export type UsuarioEditInput = z.infer<typeof usuarioEditSchema>;
 export const senhaSchema = z
   .object({
     senhaAtual: z.string().min(1, "Senha atual obrigatória"),
-    novaSenha: z.string().min(10, "Mínimo 10 caracteres"),
-    confirmar: z.string().min(6, "Mínimo 6 caracteres"),
+    novaSenha: z
+      .string()
+      .min(10, "Mínimo 10 caracteres")
+      .max(72, "Máximo 72 caracteres"),
+    confirmar: z.string().min(1, "Confirme a nova senha"),
   })
   .refine((d) => d.novaSenha === d.confirmar, {
     message: "As senhas não conferem",
     path: ["confirmar"],
   });
 export type SenhaInput = z.infer<typeof senhaSchema>;
+
+/** Redefinição pelo administrador: sem a senha atual do funcionário. */
+export const redefinirSenhaSchema = z
+  .object({
+    novaSenha: z
+      .string()
+      .min(10, "Mínimo 10 caracteres")
+      .max(72, "Máximo 72 caracteres"),
+    confirmar: z.string().min(1, "Confirme a nova senha"),
+  })
+  .refine((d) => d.novaSenha === d.confirmar, {
+    message: "As senhas não conferem",
+    path: ["confirmar"],
+  });
+export type RedefinirSenhaInput = z.infer<typeof redefinirSenhaSchema>;
 
 const valorOpcional = z
   .string()
