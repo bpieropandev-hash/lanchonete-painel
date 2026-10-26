@@ -51,6 +51,32 @@ export interface ConfiguracaoLoja {
   entregaDisponivel: boolean;
   whatsappLoja: string | null;
   bairros: BairroEntrega[];
+  aparencia: AparenciaLoja;
+  cashbackPercentual: number;
+  cashbackValidadeDias: number;
+}
+
+export interface AparenciaLoja {
+  nomeLoja: string | null;
+  slogan: string | null;
+  enderecoLoja: string | null;
+  instagram: string | null;
+  logoUrl: string | null;
+  capaUrl: string | null;
+  corPrimaria: string | null;
+}
+
+export interface Banner {
+  id: string;
+  titulo: string;
+  descricao: string | null;
+  imagemUrl: string | null;
+  produtoId: string | null;
+  ativo: boolean;
+  /** "YYYY-MM-DD", inclusivo. */
+  inicio: string | null;
+  fim: string | null;
+  ordem: number;
 }
 
 export type TipoCategoria = "LANCHE" | "BEBIDA" | "OUTRO";
@@ -113,6 +139,7 @@ export interface Produto {
   precoBase: string;
   fotoUrl: string | null;
   disponivel: boolean;
+  destaque?: boolean;
   ordem: number;
   categoriaId: string;
   categoria?: Categoria;
@@ -202,6 +229,8 @@ export interface Pedido {
   trocoPara: string | null;
   subtotal: string;
   taxaEntrega: string;
+  descontoCashback?: string;
+  cashbackGerado?: string;
   total: string;
   obs: string | null;
   enderecoEntregaSnapshot: EnderecoSnapshot | null;

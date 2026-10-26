@@ -19,6 +19,7 @@ const PREFIXOS_POR_PERFIL: Record<PerfilUsuario, string[]> = {
   ADMIN: [
     "/pedidos",
     "/loja",
+    "/aparencia",
     "/chapeiro",
     "/cardapio",
     "/entregadores",
