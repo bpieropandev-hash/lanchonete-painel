@@ -10,6 +10,7 @@ import {
   Store,
   Bell,
   MessageCircle,
+  Printer,
 } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
@@ -25,6 +26,8 @@ import {
   statusLabel,
   tipoPagamentoLabel,
 } from "@/lib/format";
+import { imprimirNotinha } from "@/lib/notinha";
+import { useMarcaStore } from "@/store/marcaStore";
 import { useToastStore } from "@/store/toastStore";
 import type { Pedido, StatusPedido, TipoEntrega } from "@/types";
 import axios from "axios";
@@ -84,6 +87,14 @@ function PedidoDetalheContent({
   const [showCancel, setShowCancel] = useState(false);
   const [motivoCancelamento, setMotivoCancelamento] = useState("");
   const showToast = useToastStore((s) => s.show);
+  const nomeLoja = useMarcaStore((s) => s.nome);
+
+  const handleImprimir = () => {
+    if (!pedido) return;
+    if (!imprimirNotinha(pedido, nomeLoja)) {
+      showToast("Não foi possível abrir a impressão. Permita pop-ups neste site.", "error");
+    }
+  };
 
   useEffect(() => {
     const counter = sequence;
@@ -239,6 +250,15 @@ function PedidoDetalheContent({
         <p className="py-8 text-center text-sm text-gray-500">Carregando...</p>
       ) : (
         <div className="space-y-4 text-sm">
+          <Button
+            variant="secondary"
+            size="sm"
+            fullWidth
+            onClick={handleImprimir}
+            leftIcon={<Printer size={16} />}
+          >
+            Imprimir notinha
+          </Button>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <p className="text-xs font-medium text-gray-500">Status</p>
