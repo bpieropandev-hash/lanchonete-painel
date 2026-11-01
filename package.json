@@ -8,8 +8,8 @@
     "start": "next start -p 3002",
     "lint": "eslint . --max-warnings=0",
     "typecheck": "tsc --noEmit",
-    "audit:prod": "npm audit --omit=dev --audit-level=low",
-    "audit": "npm audit --audit-level=low",
+    "audit:prod": "npm audit --omit=dev --audit-level=high",
+    "audit": "npm audit --audit-level=high",
     "test:security": "node --test src/lib/*.test.cjs"
   },
   "dependencies": {
