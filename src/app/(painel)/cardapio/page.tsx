@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Plus, Edit, Power, Image as ImageIcon } from "lucide-react";
+import { Plus, Edit, Power, Trash2, Image as ImageIcon } from "lucide-react";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { PainelShell } from "@/components/layout/PainelShell";
 import { Button } from "@/components/ui/Button";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { ProdutoModal } from "@/components/cardapio/ProdutoModal";
+import { ExcluirProdutoModal } from "@/components/cardapio/ExcluirProdutoModal";
 import { CategoriaModal } from "@/components/cardapio/CategoriaModal";
 import { IngredienteModal } from "@/components/cardapio/IngredienteModal";
 import { api } from "@/lib/api";
@@ -17,6 +18,120 @@ import type { Categoria, Ingrediente, Produto } from "@/types";
 
 type Tab = "produtos" | "categorias" | "ingredientes";
 
+const TAB_LABEL: Record<Tab, string> = {
+  produtos: "Produtos",
+  categorias: "Categorias",
+  ingredientes: "Ingredientes",
+};
+
+function StatusBadge({
+  ativo,
+  rotuloAtivo,
+  rotuloInativo,
+}: {
+  ativo: boolean;
+  rotuloAtivo: string;
+  rotuloInativo: string;
+}) {
+  return (
+    <span
+      className={`inline-block whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium ${
+        ativo ? "bg-green-100 text-green-800" : "bg-gray-200 text-gray-600"
+      }`}
+    >
+      {ativo ? rotuloAtivo : rotuloInativo}
+    </span>
+  );
+}
+
+function FotoProduto({
+  produto,
+  className,
+}: {
+  produto: Produto;
+  className: string;
+}) {
+  return produto.fotoUrl ? (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={resolveImageUrl(produto.fotoUrl) ?? ""}
+      alt={produto.nome}
+      className={`${className} shrink-0 rounded object-cover`}
+    />
+  ) : (
+    <div
+      className={`${className} flex shrink-0 items-center justify-center rounded bg-gray-200 text-gray-400`}
+    >
+      <ImageIcon size={16} />
+    </div>
+  );
+}
+
+/**
+ * Botões de ação de uma linha. Cada botão só aparece se o handler for passado,
+ * assim a página decide o que cada perfil pode fazer. `rotulos` troca os ícones
+ * soltos (tabela) por botões com texto e área de toque maior (cartão no celular).
+ */
+function AcoesLinha({
+  ativo,
+  rotulos = false,
+  onEditar,
+  onToggle,
+  onExcluir,
+}: {
+  ativo: boolean;
+  rotulos?: boolean;
+  onEditar?: () => void;
+  onToggle?: () => void;
+  onExcluir?: () => void;
+}) {
+  const base = rotulos
+    ? "inline-flex items-center justify-center gap-1.5 rounded-md border border-gray-200 px-3 py-2 text-sm font-medium"
+    : "rounded p-1";
+  const rotuloToggle = ativo ? "Desativar" : "Ativar";
+
+  return (
+    <>
+      {onEditar && (
+        <button
+          onClick={onEditar}
+          className={`${base} text-gray-700 hover:bg-gray-100`}
+          aria-label="Editar"
+        >
+          <Edit size={16} />
+          {rotulos && "Editar"}
+        </button>
+      )}
+      {onToggle && (
+        <button
+          onClick={onToggle}
+          className={`${base} ${
+            ativo
+              ? "text-green-600 hover:bg-green-50"
+              : "text-gray-500 hover:bg-gray-100"
+          }`}
+          aria-label={rotuloToggle}
+          title={rotuloToggle}
+        >
+          <Power size={16} />
+          {rotulos && rotuloToggle}
+        </button>
+      )}
+      {onExcluir && (
+        <button
+          onClick={onExcluir}
+          className={`${base} text-red-600 hover:bg-red-50`}
+          aria-label="Excluir"
+          title="Excluir"
+        >
+          <Trash2 size={16} />
+          {rotulos && "Excluir"}
+        </button>
+      )}
+    </>
+  );
+}
+
 function CardapioContent() {
   const [tab, setTab] = useState<Tab>("produtos");
   const [produtos, setProdutos] = useState<Produto[]>([]);
@@ -25,6 +140,7 @@ function CardapioContent() {
   const [loading, setLoading] = useState(true);
   const [produtoEdit, setProdutoEdit] = useState<Produto | null>(null);
   const [produtoOpen, setProdutoOpen] = useState(false);
+  const [produtoExcluir, setProdutoExcluir] = useState<Produto | null>(null);
   const [categoriaEdit, setCategoriaEdit] = useState<Categoria | null>(null);
   const [categoriaOpen, setCategoriaOpen] = useState(false);
   const [ingredienteEdit, setIngredienteEdit] = useState<Ingrediente | null>(null);
@@ -90,20 +206,40 @@ function CardapioContent() {
     }
   };
 
+  const editarProduto = (p: Produto) => {
+    setProdutoEdit(p);
+    setProdutoOpen(true);
+  };
+
+  const editarCategoria = (c: Categoria) => {
+    setCategoriaEdit(c);
+    setCategoriaOpen(true);
+  };
+
+  const editarIngrediente = (i: Ingrediente) => {
+    setIngredienteEdit(i);
+    setIngredienteOpen(true);
+  };
+
   return (
     <>
-      <div className="mb-4 flex flex-wrap items-center gap-2 border-b border-gray-200">
-        {(["produtos", "categorias", "ingredientes"] as Tab[]).map((t) => (
+      <div
+        role="tablist"
+        className="scrollbar-hide mb-4 flex overflow-x-auto border-b border-gray-200"
+      >
+        {(Object.keys(TAB_LABEL) as Tab[]).map((t) => (
           <button
             key={t}
+            role="tab"
+            aria-selected={tab === t}
             onClick={() => setTab(t)}
-            className={`-mb-px border-b-2 px-4 py-2 text-sm font-semibold capitalize transition-colors ${
+            className={`-mb-px shrink-0 whitespace-nowrap border-b-2 px-4 py-2 text-sm font-semibold transition-colors ${
               tab === t
                 ? "border-primary-500 text-primary-700"
                 : "border-transparent text-gray-500 hover:text-gray-800"
             }`}
           >
-            {t}
+            {TAB_LABEL[t]}
           </button>
         ))}
       </div>
@@ -117,8 +253,9 @@ function CardapioContent() {
           {tab === "produtos" && (
             <div>
               {isAdmin && (
-                <div className="mb-3 flex justify-end">
+                <div className="mb-3 flex sm:justify-end">
                   <Button
+                    className="w-full sm:w-auto"
                     leftIcon={<Plus size={16} />}
                     onClick={() => {
                       setProdutoEdit(null);
@@ -129,103 +266,114 @@ function CardapioContent() {
                   </Button>
                 </div>
               )}
-              <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-50 text-left text-xs uppercase text-gray-500">
-                    <tr>
-                      <th className="px-3 py-2">Foto</th>
-                      <th className="px-3 py-2">Nome</th>
-                      <th className="px-3 py-2 hidden md:table-cell">Categoria</th>
-                      <th className="px-3 py-2">Preço</th>
-                      <th className="px-3 py-2">Status</th>
-                      <th className="px-3 py-2 text-right">Ações</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {produtos.length === 0 ? (
+
+              {produtos.length === 0 && (
+                <div className="rounded-lg border border-gray-200 bg-white px-3 py-8 text-center text-sm text-gray-400 shadow-sm">
+                  Nenhum produto cadastrado
+                </div>
+              )}
+
+              {/* Celular: um cartão por produto */}
+              {produtos.length > 0 && (
+                <ul className="divide-y divide-gray-100 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm md:hidden">
+                  {produtos.map((p) => (
+                    <li key={p.id} className="p-3">
+                      <div className="flex gap-3">
+                        <FotoProduto produto={p} className="h-14 w-14" />
+                        <div className="min-w-0 flex-1">
+                          <p className="break-words font-medium text-gray-900">
+                            {p.nome}
+                          </p>
+                          {p.categoria?.nome && (
+                            <p className="text-xs text-gray-500">{p.categoria.nome}</p>
+                          )}
+                          <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+                            <span className="text-sm font-semibold text-gray-900">
+                              {formatBRL(p.precoBase)}
+                            </span>
+                            <StatusBadge
+                              ativo={p.disponivel}
+                              rotuloAtivo="Disponível"
+                              rotuloInativo="Indisponível"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <AcoesLinha
+                          rotulos
+                          ativo={p.disponivel}
+                          onEditar={isAdmin ? () => editarProduto(p) : undefined}
+                          onToggle={() => toggleProdutoDisponivel(p)}
+                          onExcluir={isAdmin ? () => setProdutoExcluir(p) : undefined}
+                        />
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              {/* Tablet/desktop: tabela */}
+              {produtos.length > 0 && (
+                <div className="hidden overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm md:block">
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-50 text-left text-xs uppercase text-gray-500">
                       <tr>
-                        <td colSpan={6} className="px-3 py-8 text-center text-gray-400">
-                          Nenhum produto cadastrado
-                        </td>
+                        <th className="px-3 py-2">Foto</th>
+                        <th className="px-3 py-2">Nome</th>
+                        <th className="px-3 py-2">Categoria</th>
+                        <th className="px-3 py-2">Preço</th>
+                        <th className="px-3 py-2">Status</th>
+                        <th className="px-3 py-2 text-right">Ações</th>
                       </tr>
-                    ) : (
-                      produtos.map((p) => (
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {produtos.map((p) => (
                         <tr key={p.id} className="hover:bg-gray-50">
                           <td className="px-3 py-2">
-                            {p.fotoUrl ? (
-                              // eslint-disable-next-line @next/next/no-img-element
-                              <img
-                                src={resolveImageUrl(p.fotoUrl) ?? ""}
-                                alt={p.nome}
-                                className="h-10 w-10 rounded object-cover"
-                              />
-                            ) : (
-                              <div className="flex h-10 w-10 items-center justify-center rounded bg-gray-200 text-gray-400">
-                                <ImageIcon size={16} />
-                              </div>
-                            )}
+                            <FotoProduto produto={p} className="h-10 w-10" />
                           </td>
                           <td className="px-3 py-2 font-medium text-gray-900">
                             {p.nome}
                           </td>
-                          <td className="px-3 py-2 hidden md:table-cell text-gray-600">
+                          <td className="px-3 py-2 text-gray-600">
                             {p.categoria?.nome || "-"}
                           </td>
-                          <td className="px-3 py-2 font-medium text-gray-900">
+                          <td className="whitespace-nowrap px-3 py-2 font-medium text-gray-900">
                             {formatBRL(p.precoBase)}
                           </td>
                           <td className="px-3 py-2">
-                            <span
-                              className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                                p.disponivel
-                                  ? "bg-green-100 text-green-800"
-                                  : "bg-gray-200 text-gray-600"
-                              }`}
-                            >
-                              {p.disponivel ? "Disponível" : "Indisponível"}
-                            </span>
+                            <StatusBadge
+                              ativo={p.disponivel}
+                              rotuloAtivo="Disponível"
+                              rotuloInativo="Indisponível"
+                            />
                           </td>
                           <td className="px-3 py-2 text-right">
                             <div className="flex justify-end gap-1">
-                              {isAdmin && (
-                                <button
-                                  onClick={() => {
-                                    setProdutoEdit(p);
-                                    setProdutoOpen(true);
-                                  }}
-                                  className="rounded p-1 text-gray-600 hover:bg-gray-100"
-                                  aria-label="Editar"
-                                >
-                                  <Edit size={16} />
-                                </button>
-                              )}
-                              <button
-                                onClick={() => toggleProdutoDisponivel(p)}
-                                className={`rounded p-1 ${
-                                  p.disponivel
-                                    ? "text-green-600 hover:bg-green-50"
-                                    : "text-gray-400 hover:bg-gray-100"
-                                }`}
-                                aria-label="Toggle"
-                              >
-                                <Power size={16} />
-                              </button>
+                              <AcoesLinha
+                                ativo={p.disponivel}
+                                onEditar={isAdmin ? () => editarProduto(p) : undefined}
+                                onToggle={() => toggleProdutoDisponivel(p)}
+                                onExcluir={isAdmin ? () => setProdutoExcluir(p) : undefined}
+                              />
                             </div>
                           </td>
                         </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           )}
 
           {tab === "categorias" && (
             <div>
               {isAdmin && (
-                <div className="mb-3 flex justify-end">
+                <div className="mb-3 flex sm:justify-end">
                   <Button
+                    className="w-full sm:w-auto"
                     leftIcon={<Plus size={16} />}
                     onClick={() => {
                       setCategoriaEdit(null);
@@ -236,84 +384,94 @@ function CardapioContent() {
                   </Button>
                 </div>
               )}
-              <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-50 text-left text-xs uppercase text-gray-500">
-                    <tr>
-                      <th className="px-3 py-2">Nome</th>
-                      <th className="px-3 py-2">Ordem</th>
-                      <th className="px-3 py-2">Status</th>
-                      <th className="px-3 py-2 text-right">Ações</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {categorias.length === 0 ? (
+
+              {categorias.length === 0 && (
+                <div className="rounded-lg border border-gray-200 bg-white px-3 py-8 text-center text-sm text-gray-400 shadow-sm">
+                  Nenhuma categoria cadastrada
+                </div>
+              )}
+
+              {categorias.length > 0 && (
+                <ul className="divide-y divide-gray-100 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm md:hidden">
+                  {categorias.map((c) => (
+                    <li key={c.id} className="p-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="break-words font-medium text-gray-900">{c.nome}</p>
+                          <p className="text-xs text-gray-500">Ordem {c.ordem}</p>
+                        </div>
+                        <StatusBadge
+                          ativo={c.ativo}
+                          rotuloAtivo="Ativa"
+                          rotuloInativo="Inativa"
+                        />
+                      </div>
+                      {isAdmin && (
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          <AcoesLinha
+                            rotulos
+                            ativo={c.ativo}
+                            onEditar={() => editarCategoria(c)}
+                            onToggle={() => toggleCategoriaAtiva(c)}
+                          />
+                        </div>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              {categorias.length > 0 && (
+                <div className="hidden overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm md:block">
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-50 text-left text-xs uppercase text-gray-500">
                       <tr>
-                        <td colSpan={4} className="px-3 py-8 text-center text-gray-400">
-                          Nenhuma categoria cadastrada
-                        </td>
+                        <th className="px-3 py-2">Nome</th>
+                        <th className="px-3 py-2">Ordem</th>
+                        <th className="px-3 py-2">Status</th>
+                        <th className="px-3 py-2 text-right">Ações</th>
                       </tr>
-                    ) : (
-                      categorias.map((c) => (
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {categorias.map((c) => (
                         <tr key={c.id} className="hover:bg-gray-50">
                           <td className="px-3 py-2 font-medium text-gray-900">
                             {c.nome}
                           </td>
                           <td className="px-3 py-2 text-gray-600">{c.ordem}</td>
                           <td className="px-3 py-2">
-                            <span
-                              className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                                c.ativo
-                                  ? "bg-green-100 text-green-800"
-                                  : "bg-gray-200 text-gray-600"
-                              }`}
-                            >
-                              {c.ativo ? "Ativa" : "Inativa"}
-                            </span>
+                            <StatusBadge
+                              ativo={c.ativo}
+                              rotuloAtivo="Ativa"
+                              rotuloInativo="Inativa"
+                            />
                           </td>
                           <td className="px-3 py-2 text-right">
                             <div className="flex justify-end gap-1">
                               {isAdmin && (
-                                <button
-                                  onClick={() => {
-                                    setCategoriaEdit(c);
-                                    setCategoriaOpen(true);
-                                  }}
-                                  className="rounded p-1 text-gray-600 hover:bg-gray-100"
-                                  aria-label="Editar"
-                                >
-                                  <Edit size={16} />
-                                </button>
-                              )}
-                              {isAdmin && (
-                                <button
-                                  onClick={() => toggleCategoriaAtiva(c)}
-                                  className={`rounded p-1 ${
-                                    c.ativo
-                                      ? "text-green-600 hover:bg-green-50"
-                                      : "text-gray-400 hover:bg-gray-100"
-                                  }`}
-                                  aria-label="Toggle"
-                                >
-                                  <Power size={16} />
-                                </button>
+                                <AcoesLinha
+                                  ativo={c.ativo}
+                                  onEditar={() => editarCategoria(c)}
+                                  onToggle={() => toggleCategoriaAtiva(c)}
+                                />
                               )}
                             </div>
                           </td>
                         </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           )}
 
           {tab === "ingredientes" && (
             <div>
               {isAdmin && (
-                <div className="mb-3 flex justify-end">
+                <div className="mb-3 flex sm:justify-end">
                   <Button
+                    className="w-full sm:w-auto"
                     leftIcon={<Plus size={16} />}
                     onClick={() => {
                       setIngredienteEdit(null);
@@ -324,26 +482,60 @@ function CardapioContent() {
                   </Button>
                 </div>
               )}
-              <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-50 text-left text-xs uppercase text-gray-500">
-                    <tr>
-                      <th className="px-3 py-2">Nome</th>
-                      <th className="px-3 py-2">Preço adicional</th>
-                      <th className="px-3 py-2">Removível</th>
-                      <th className="px-3 py-2">Status</th>
-                      <th className="px-3 py-2 text-right">Ações</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {ingredientes.length === 0 ? (
+
+              {ingredientes.length === 0 && (
+                <div className="rounded-lg border border-gray-200 bg-white px-3 py-8 text-center text-sm text-gray-400 shadow-sm">
+                  Nenhum ingrediente cadastrado
+                </div>
+              )}
+
+              {ingredientes.length > 0 && (
+                <ul className="divide-y divide-gray-100 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm md:hidden">
+                  {ingredientes.map((i) => (
+                    <li key={i.id} className="p-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="break-words font-medium text-gray-900">{i.nome}</p>
+                          <p className="text-xs text-gray-500">
+                            Adicional {formatBRL(i.precoAdicional)} ·{" "}
+                            {i.removivel ? "Removível" : "Não removível"}
+                          </p>
+                        </div>
+                        <StatusBadge
+                          ativo={i.ativo}
+                          rotuloAtivo="Ativo"
+                          rotuloInativo="Inativo"
+                        />
+                      </div>
+                      {isAdmin && (
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          <AcoesLinha
+                            rotulos
+                            ativo={i.ativo}
+                            onEditar={() => editarIngrediente(i)}
+                            onToggle={() => toggleIngredienteAtivo(i)}
+                          />
+                        </div>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              {ingredientes.length > 0 && (
+                <div className="hidden overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm md:block">
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-50 text-left text-xs uppercase text-gray-500">
                       <tr>
-                        <td colSpan={5} className="px-3 py-8 text-center text-gray-400">
-                          Nenhum ingrediente cadastrado
-                        </td>
+                        <th className="px-3 py-2">Nome</th>
+                        <th className="px-3 py-2">Preço adicional</th>
+                        <th className="px-3 py-2">Removível</th>
+                        <th className="px-3 py-2">Status</th>
+                        <th className="px-3 py-2 text-right">Ações</th>
                       </tr>
-                    ) : (
-                      ingredientes.map((i) => (
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {ingredientes.map((i) => (
                         <tr key={i.id} className="hover:bg-gray-50">
                           <td className="px-3 py-2 font-medium text-gray-900">
                             {i.nome}
@@ -355,51 +547,29 @@ function CardapioContent() {
                             {i.removivel ? "Sim" : "Não"}
                           </td>
                           <td className="px-3 py-2">
-                            <span
-                              className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                                i.ativo
-                                  ? "bg-green-100 text-green-800"
-                                  : "bg-gray-200 text-gray-600"
-                              }`}
-                            >
-                              {i.ativo ? "Ativo" : "Inativo"}
-                            </span>
+                            <StatusBadge
+                              ativo={i.ativo}
+                              rotuloAtivo="Ativo"
+                              rotuloInativo="Inativo"
+                            />
                           </td>
                           <td className="px-3 py-2 text-right">
                             <div className="flex justify-end gap-1">
                               {isAdmin && (
-                                <button
-                                  onClick={() => {
-                                    setIngredienteEdit(i);
-                                    setIngredienteOpen(true);
-                                  }}
-                                  className="rounded p-1 text-gray-600 hover:bg-gray-100"
-                                  aria-label="Editar"
-                                >
-                                  <Edit size={16} />
-                                </button>
-                              )}
-                              {isAdmin && (
-                                <button
-                                  onClick={() => toggleIngredienteAtivo(i)}
-                                  className={`rounded p-1 ${
-                                    i.ativo
-                                      ? "text-green-600 hover:bg-green-50"
-                                      : "text-gray-400 hover:bg-gray-100"
-                                  }`}
-                                  aria-label="Toggle"
-                                >
-                                  <Power size={16} />
-                                </button>
+                                <AcoesLinha
+                                  ativo={i.ativo}
+                                  onEditar={() => editarIngrediente(i)}
+                                  onToggle={() => toggleIngredienteAtivo(i)}
+                                />
                               )}
                             </div>
                           </td>
                         </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           )}
         </>
@@ -412,6 +582,12 @@ function CardapioContent() {
         produto={produtoEdit}
         categorias={categorias}
         ingredientes={ingredientes.filter((i) => i.ativo)}
+      />
+      <ExcluirProdutoModal
+        produto={produtoExcluir}
+        onClose={() => setProdutoExcluir(null)}
+        onDeleted={(id) => setProdutos((prev) => prev.filter((x) => x.id !== id))}
+        onRefresh={loadAll}
       />
       <CategoriaModal
         open={categoriaOpen}
