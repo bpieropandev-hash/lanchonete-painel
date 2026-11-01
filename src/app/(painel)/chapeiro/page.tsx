@@ -292,15 +292,15 @@ function ChapeiroPageContent() {
         </button>
       )}
 
-      <header className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-zinc-800 bg-zinc-950 px-4 py-3 sm:px-6">
+      <header className="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b border-zinc-800 bg-zinc-950 px-4 py-3 sm:px-6">
         <div className="flex items-center gap-3">
           <h1 className="text-xl font-bold">Cozinha</h1>
-          <span className={`rounded-md px-2.5 py-1 text-sm ${novos > 0 ? "bg-yellow-400 font-semibold text-zinc-900" : "bg-zinc-800 text-zinc-300"}`}>
+          <span className={`whitespace-nowrap rounded-md px-2.5 py-1 text-sm ${novos > 0 ? "bg-yellow-400 font-semibold text-zinc-900" : "bg-zinc-800 text-zinc-300"}`}>
             {novos} {novos === 1 ? "novo" : "novos"}
           </span>
-          <span className="rounded-md bg-zinc-800 px-2.5 py-1 text-sm text-zinc-300">{emPreparo} em preparo</span>
+          <span className="whitespace-nowrap rounded-md bg-zinc-800 px-2.5 py-1 text-sm text-zinc-300">{emPreparo} em preparo</span>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="ml-auto flex items-center gap-2">
           {!conectado && (
             <span className="flex items-center gap-2 rounded-lg bg-red-600 px-3 py-2 text-sm font-bold text-white">
               <WifiOff size={18} />

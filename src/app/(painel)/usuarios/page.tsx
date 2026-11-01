@@ -6,6 +6,7 @@ import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { PainelShell } from "@/components/layout/PainelShell";
 import { Button } from "@/components/ui/Button";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import { AcaoBotao, StatusBadge } from "@/components/ui/LinhaAcoes";
 import { UsuarioModal } from "@/components/usuarios/UsuarioModal";
 import { SenhaModal } from "@/components/usuarios/SenhaModal";
 import { api } from "@/lib/api";
@@ -51,8 +52,9 @@ function UsuariosContent() {
 
   return (
     <>
-      <div className="mb-4 flex justify-end">
+      <div className="mb-4 flex sm:justify-end">
         <Button
+          className="w-full sm:w-auto"
           leftIcon={<Plus size={16} />}
           onClick={() => {
             setEditItem(null);
@@ -68,7 +70,55 @@ function UsuariosContent() {
           <LoadingSpinner size="lg" />
         </div>
       ) : (
-        <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+        <>
+        {/* Celular: um cartão por usuário */}
+        {usuarios.length === 0 ? (
+          <div className="rounded-lg border border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-400 shadow-sm md:hidden">
+            Nenhum usuário cadastrado
+          </div>
+        ) : (
+          <ul className="divide-y divide-gray-100 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm md:hidden">
+            {usuarios.map((u) => (
+              <li key={u.id} className="p-3">
+                <p className="break-words font-medium text-gray-900">{u.nome}</p>
+                <p className="break-all text-sm text-gray-600">{u.email}</p>
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700">
+                    {perfilLabel(u.perfil)}
+                  </span>
+                  <StatusBadge ativo={u.ativo} rotuloAtivo="Ativo" rotuloInativo="Inativo" />
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <AcaoBotao
+                    rotulo
+                    icone={<Edit size={16} />}
+                    nome="Editar"
+                    onClick={() => {
+                      setEditItem(u);
+                      setModalOpen(true);
+                    }}
+                  />
+                  <AcaoBotao
+                    rotulo
+                    icone={<KeyRound size={16} />}
+                    nome="Alterar senha"
+                    onClick={() => setSenhaItem(u)}
+                  />
+                  <AcaoBotao
+                    rotulo
+                    icone={<Power size={16} />}
+                    nome={u.ativo ? "Desativar" : "Ativar"}
+                    onClick={() => toggleAtivo(u)}
+                    tom={u.ativo ? "ligado" : "desligado"}
+                  />
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        {/* Tablet/desktop: tabela */}
+        <div className="hidden overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm md:block">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 text-left text-xs uppercase text-gray-500">
               <tr>
@@ -156,6 +206,7 @@ function UsuariosContent() {
             </tbody>
           </table>
         </div>
+        </>
       )}
 
       <UsuarioModal

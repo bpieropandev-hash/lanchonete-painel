@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Plus, Edit, Power, Trash2, Image as ImageIcon } from "lucide-react";
+import { Plus, Image as ImageIcon } from "lucide-react";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { PainelShell } from "@/components/layout/PainelShell";
 import { Button } from "@/components/ui/Button";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import { AcoesLinha, StatusBadge } from "@/components/ui/LinhaAcoes";
 import { ProdutoModal } from "@/components/cardapio/ProdutoModal";
 import { ExcluirProdutoModal } from "@/components/cardapio/ExcluirProdutoModal";
 import { CategoriaModal } from "@/components/cardapio/CategoriaModal";
@@ -23,26 +24,6 @@ const TAB_LABEL: Record<Tab, string> = {
   categorias: "Categorias",
   ingredientes: "Ingredientes",
 };
-
-function StatusBadge({
-  ativo,
-  rotuloAtivo,
-  rotuloInativo,
-}: {
-  ativo: boolean;
-  rotuloAtivo: string;
-  rotuloInativo: string;
-}) {
-  return (
-    <span
-      className={`inline-block whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium ${
-        ativo ? "bg-green-100 text-green-800" : "bg-gray-200 text-gray-600"
-      }`}
-    >
-      {ativo ? rotuloAtivo : rotuloInativo}
-    </span>
-  );
-}
 
 function FotoProduto({
   produto,
@@ -64,71 +45,6 @@ function FotoProduto({
     >
       <ImageIcon size={16} />
     </div>
-  );
-}
-
-/**
- * Botões de ação de uma linha. Cada botão só aparece se o handler for passado,
- * assim a página decide o que cada perfil pode fazer. `rotulos` troca os ícones
- * soltos (tabela) por botões com texto e área de toque maior (cartão no celular).
- */
-function AcoesLinha({
-  ativo,
-  rotulos = false,
-  onEditar,
-  onToggle,
-  onExcluir,
-}: {
-  ativo: boolean;
-  rotulos?: boolean;
-  onEditar?: () => void;
-  onToggle?: () => void;
-  onExcluir?: () => void;
-}) {
-  const base = rotulos
-    ? "inline-flex items-center justify-center gap-1.5 rounded-md border border-gray-200 px-3 py-2 text-sm font-medium"
-    : "rounded p-1";
-  const rotuloToggle = ativo ? "Desativar" : "Ativar";
-
-  return (
-    <>
-      {onEditar && (
-        <button
-          onClick={onEditar}
-          className={`${base} text-gray-700 hover:bg-gray-100`}
-          aria-label="Editar"
-        >
-          <Edit size={16} />
-          {rotulos && "Editar"}
-        </button>
-      )}
-      {onToggle && (
-        <button
-          onClick={onToggle}
-          className={`${base} ${
-            ativo
-              ? "text-green-600 hover:bg-green-50"
-              : "text-gray-500 hover:bg-gray-100"
-          }`}
-          aria-label={rotuloToggle}
-          title={rotuloToggle}
-        >
-          <Power size={16} />
-          {rotulos && rotuloToggle}
-        </button>
-      )}
-      {onExcluir && (
-        <button
-          onClick={onExcluir}
-          className={`${base} text-red-600 hover:bg-red-50`}
-          aria-label="Excluir"
-          title="Excluir"
-        >
-          <Trash2 size={16} />
-          {rotulos && "Excluir"}
-        </button>
-      )}
-    </>
   );
 }
 

@@ -115,6 +115,7 @@ export function Banners({ produtos, onPrevia }: BannersProps) {
         <Button
           size="sm"
           variant="secondary"
+          className="max-sm:shrink-0 max-sm:whitespace-nowrap"
           leftIcon={<Plus size={16} />}
           onClick={() => {
             setEditando(null);
@@ -139,7 +140,7 @@ export function Banners({ produtos, onPrevia }: BannersProps) {
                   {imagem && <img src={imagem} alt="" className="h-full w-full object-cover" />}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-gray-900">{b.titulo}</p>
+                  <p className="break-words text-sm font-medium text-gray-900 sm:truncate">{b.titulo}</p>
                   <p className="text-xs text-gray-500">{periodo(b)}</p>
                 </div>
                 <button

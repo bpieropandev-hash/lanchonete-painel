@@ -6,6 +6,7 @@ import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { PainelShell } from "@/components/layout/PainelShell";
 import { Button } from "@/components/ui/Button";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import { AcoesLinha, StatusBadge } from "@/components/ui/LinhaAcoes";
 import { EntregadorModal } from "@/components/entregadores/EntregadorModal";
 import { api } from "@/lib/api";
 import { formatTelefone } from "@/lib/format";
@@ -51,8 +52,9 @@ function EntregadoresContent() {
   return (
     <>
       {isAdmin && (
-        <div className="mb-4 flex justify-end">
+        <div className="mb-4 flex sm:justify-end">
           <Button
+            className="w-full sm:w-auto"
             leftIcon={<Plus size={16} />}
             onClick={() => {
               setEditItem(null);
@@ -69,7 +71,54 @@ function EntregadoresContent() {
           <LoadingSpinner size="lg" />
         </div>
       ) : (
-        <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+        <>
+        {/* Celular: um cartão por entregador */}
+        {entregadores.length === 0 ? (
+          <div className="rounded-lg border border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-400 shadow-sm md:hidden">
+            Nenhum entregador cadastrado
+          </div>
+        ) : (
+          <ul className="divide-y divide-gray-100 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm md:hidden">
+            {entregadores.map((e) => (
+              <li key={e.id} className="p-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="break-words font-medium text-gray-900">{e.nome}</p>
+                    <p className="mt-1 flex items-center gap-1.5 text-sm text-gray-600">
+                      <Phone size={14} className="shrink-0" />
+                      {formatTelefone(e.telefone)}
+                    </p>
+                    {e.usuarioId ? (
+                      <p className="mt-0.5 flex items-center gap-1.5 text-sm text-gray-600">
+                        <Smartphone size={14} className="shrink-0" />
+                        Tela de entregas
+                      </p>
+                    ) : (
+                      <p className="mt-0.5 text-xs text-amber-700">Sem login vinculado</p>
+                    )}
+                  </div>
+                  <StatusBadge ativo={e.ativo} rotuloAtivo="Ativo" rotuloInativo="Inativo" />
+                </div>
+                {isAdmin && (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <AcoesLinha
+                      rotulos
+                      ativo={e.ativo}
+                      onEditar={() => {
+                        setEditItem(e);
+                        setModalOpen(true);
+                      }}
+                      onToggle={() => toggleAtivo(e)}
+                    />
+                  </div>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+
+        {/* Tablet/desktop: tabela */}
+        <div className="hidden overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm md:block">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 text-left text-xs uppercase text-gray-500">
               <tr>
@@ -160,6 +209,7 @@ function EntregadoresContent() {
             </tbody>
           </table>
         </div>
+        </>
       )}
 
       <EntregadorModal
