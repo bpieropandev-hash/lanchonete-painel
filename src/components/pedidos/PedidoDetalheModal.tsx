@@ -289,6 +289,12 @@ function PedidoDetalheContent({
             </div>
           </div>
 
+          {pedido.pagamento === "PIX" && (
+            <div className="rounded-lg bg-green-50 px-3 py-2 text-xs text-green-900">
+              <strong>Pago no Pix</strong> · não cobrar na entrega
+            </div>
+          )}
+
           {pedido.pagamento === "DINHEIRO" && (
             <div className="rounded-lg bg-yellow-50 px-3 py-2 text-xs text-yellow-900">
               <strong>Pagamento em dinheiro</strong>

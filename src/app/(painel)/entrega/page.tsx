@@ -14,6 +14,7 @@ import {
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { api, mensagemErroApi } from "@/lib/api";
 import { linkMapa } from "@/lib/mapa";
+import { cobrancaDoPedido } from "@/lib/pagamento";
 import {
   contatoDoPedido,
   formatBRL,
@@ -56,9 +57,7 @@ function CardEntrega({
   const [enviando, setEnviando] = useState(false);
   const contato = contatoDoPedido(pedido);
   const end = pedido.enderecoEntregaSnapshot;
-  const troco = pedido.trocoPara
-    ? Number(pedido.trocoPara) - Number(pedido.total)
-    : 0;
+  const cobranca = cobrancaDoPedido(pedido);
 
   // O segundo toque confirma; sem ele, o botão volta ao normal sozinho
   useEffect(() => {
@@ -108,14 +107,24 @@ function CardEntrega({
       )}
 
       <div className="mt-3 rounded-lg bg-zinc-900 p-3">
-        <p className="text-base">
-          <span className="text-zinc-400">Cobrar:</span>{" "}
-          <strong className="text-xl">{formatBRL(pedido.total)}</strong>{" "}
-          <span className="text-zinc-300">({tipoPagamentoLabel(pedido.pagamento)})</span>
-        </p>
-        {troco > 0 && (
+        {cobranca.cobrar ? (
+          <p className="text-base">
+            <span className="text-zinc-400">Cobrar:</span>{" "}
+            <strong className="text-xl">{formatBRL(pedido.total)}</strong>{" "}
+            <span className="text-zinc-300">({tipoPagamentoLabel(pedido.pagamento)})</span>
+          </p>
+        ) : (
+          // Pix já foi pago: o entregador não cobra nada.
+          <>
+            <p className="text-xl font-bold text-emerald-400">
+              Pago no {tipoPagamentoLabel(pedido.pagamento)}
+            </p>
+            <p className="text-base text-zinc-300">Não cobrar do cliente</p>
+          </>
+        )}
+        {cobranca.troco !== null && (
           <p className="mt-1 text-base text-amber-300">
-            Paga com {formatBRL(pedido.trocoPara!)} · levar {formatBRL(troco)} de troco
+            Paga com {formatBRL(pedido.trocoPara!)} · levar {formatBRL(cobranca.troco)} de troco
           </p>
         )}
       </div>

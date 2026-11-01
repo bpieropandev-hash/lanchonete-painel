@@ -8,6 +8,7 @@ import {
   tipoPagamentoLabel,
 } from "@/lib/format";
 import { NOME_LOJA } from "@/lib/marca";
+import { cobrancaDoPedido } from "@/lib/pagamento";
 
 /** Todo texto vindo do cliente passa por aqui antes de entrar no HTML. */
 function esc(valor: unknown): string {
@@ -37,8 +38,9 @@ function esc(valor: unknown): string {
  * - Rodapé identifica a via como controle interno e avisa que não é documento
  *   fiscal (comanda não substitui o documento fiscal).
  *
- * Diz o mesmo que a tela de entregas (/entrega): cobrar o total na forma de
- * pagamento escolhida e, em dinheiro, levar de troco o valor pago menos o total.
+ * Diz o mesmo que a tela de entregas (/entrega), pela mesma regra
+ * (`cobrancaDoPedido`): Pix já foi pago e não se cobra; dinheiro e cartão são
+ * cobrados; só o dinheiro tem troco (valor pago menos o total).
  */
 export function montarNotinhaHtml(
   pedido: Pedido,
@@ -48,12 +50,8 @@ export function montarNotinhaHtml(
   const retirada = pedido.tipoEntrega === "RETIRADA";
   const contato = contatoDoPedido(pedido);
   const end = pedido.enderecoEntregaSnapshot;
-  const total = Number(pedido.total);
   const desconto = Number(pedido.descontoCashback ?? 0);
-  const troco =
-    pedido.pagamento === "DINHEIRO" && pedido.trocoPara
-      ? Number(pedido.trocoPara) - total
-      : null;
+  const cobranca = cobrancaDoPedido(pedido);
   const motoboy = pedido.entrega?.entregador?.nome;
   const numero = String(pedido.numero).padStart(3, "0");
 
@@ -86,25 +84,34 @@ export function montarNotinhaHtml(
   <div>${esc(end.cidade)}/${esc(end.uf)}${end.cep ? ` &middot; <span class="nb">CEP ${esc(formatCEP(end.cep))}</span>` : ""}</div>`
       : "";
 
-  // Entrega: o entregador cobra o total. Retirada: o pagamento é no balcão.
+  // Entrega: Pix já foi pago (não cobrar); dinheiro e cartão o entregador cobra.
+  // Retirada: o pagamento é no balcão, então não há bloco de cobrança.
   const cobrancaHtml = retirada
     ? ""
-    : `<div class="cobrar">
+    : cobranca.cobrar
+      ? `<div class="cobrar">
     <div class="rotulo">COBRAR</div>
     <div class="valor">${esc(formatBRL(pedido.total))}</div>
     <div class="forma">${esc(tipoPagamentoLabel(pedido.pagamento))}</div>
+  </div>`
+      : `<div class="pago">
+    <div class="rotulo">PEDIDO PAGO</div>
+    <div class="valor">${esc(tipoPagamentoLabel(pedido.pagamento).toUpperCase())}</div>
+    <div class="forma">NÃO COBRAR</div>
   </div>`;
 
   const trocoHtml =
-    troco !== null && troco > 0
-      ? `<div class="troco">Paga com ${esc(formatBRL(pedido.trocoPara!))}<br>LEVAR ${esc(formatBRL(troco))} DE TROCO</div>`
+    cobranca.troco !== null
+      ? `<div class="troco">Paga com ${esc(formatBRL(pedido.trocoPara!))}<br>${
+          retirada ? "DEVOLVER" : "LEVAR"
+        } ${esc(formatBRL(cobranca.troco))} DE TROCO</div>`
       : "";
 
   const totaisHtml = `<div class="linha"><span>Subtotal</span><span>${esc(formatBRL(pedido.subtotal))}</span></div>
   ${!retirada ? `<div class="linha"><span>Taxa de entrega</span><span>${esc(formatBRL(pedido.taxaEntrega))}</span></div>` : ""}
   ${desconto > 0 ? `<div class="linha"><span>Desconto cashback</span><span>-${esc(formatBRL(desconto))}</span></div>` : ""}
   <div class="linha total"><span>TOTAL</span><span>${esc(formatBRL(pedido.total))}</span></div>
-  ${retirada ? `<div class="linha"><span>Pagamento</span><span>${esc(tipoPagamentoLabel(pedido.pagamento))}</span></div>` : ""}`;
+  ${retirada ? `<div class="linha"><span>Pagamento</span><span>${esc(tipoPagamentoLabel(pedido.pagamento))}${cobranca.cobrar ? "" : " (pago)"}</span></div>` : ""}`;
 
   return `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8">
 <title>Pedido #${esc(numero)}</title>
@@ -126,10 +133,11 @@ export function montarNotinhaHtml(
   h2 { margin: 10px 0 3px; padding-bottom: 1px; border-bottom: 1px solid #000; font-size: 10px; font-weight: 700; letter-spacing: 2px; }
   .grande { font-size: 16px; font-weight: 700; line-height: 1.25; }
   .tel, .nb { white-space: nowrap; }
-  .cobrar { margin: 10px 0 4px; padding: 4px 4px 5px; border: 3px solid #000; text-align: center; font-weight: 700; }
-  .cobrar .rotulo { font-size: 12px; letter-spacing: 4px; }
-  .cobrar .valor { font-size: 32px; line-height: 1.1; }
-  .cobrar .forma { font-size: 12px; text-transform: uppercase; }
+  .cobrar, .pago { margin: 10px 0 4px; padding: 4px 4px 5px; border: 3px solid #000; text-align: center; font-weight: 700; }
+  .cobrar .rotulo, .pago .rotulo { font-size: 12px; letter-spacing: 4px; }
+  .cobrar .valor, .pago .valor { font-size: 32px; line-height: 1.1; }
+  .cobrar .forma, .pago .forma { font-size: 12px; text-transform: uppercase; }
+  .pago .forma { font-size: 14px; letter-spacing: 2px; }
   .troco { margin: 5px 0; text-align: center; font-size: 15px; font-weight: 700; }
   .obs { margin-top: 9px; padding: 4px 5px; border: 2px solid #000; font-weight: 700; }
   .item { display: grid; grid-template-columns: 26px 1fr auto; column-gap: 5px; margin-top: 5px; font-size: 12px; font-weight: 700; }
@@ -148,7 +156,7 @@ export function montarNotinhaHtml(
     .numero { font-size: 50px; }
     .tipo { font-size: 14px; }
     .grande { font-size: 14px; }
-    .cobrar .valor { font-size: 26px; }
+    .cobrar .valor, .pago .valor { font-size: 26px; }
     .troco { font-size: 12px; }
     .item { font-size: 11px; }
     .total { font-size: 14px; }

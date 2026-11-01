@@ -191,3 +191,67 @@ test('todo texto do cliente é escapado: nada vira HTML executável', () => {
   assert.doesNotMatch(h, /<img/i);
   assert.match(h, /&lt;script&gt;alert\(2\)&lt;\/script&gt;/);
 });
+
+// ---- Pix já foi pago: só dinheiro e cartão são cobrados ----
+const comPagamento = (pagamento, extra = {}) => ({ ...base, pagamento, trocoPara: pagamento === 'DINHEIRO' ? '100.00' : null, ...extra });
+
+test('entrega no Pix: não cobra nada, mostra PEDIDO PAGO / PIX / NÃO COBRAR', () => {
+  const h = html(comPagamento('PIX'));
+  const t = texto(h);
+  assert.doesNotMatch(h, /class="cobrar"/, 'sem caixa de cobrança');
+  assert.doesNotMatch(h, /<div class="rotulo">COBRAR<\/div>/);
+  assert.match(h, /<div class="pago">/);
+  assert.match(t, /PEDIDO PAGO PIX NÃO COBRAR/);
+  assert.doesNotMatch(t, /COBRAR\s*R\$/, 'nunca "COBRAR R$ ..." no Pix');
+  assert.match(t, /TOTAL/, 'o total do pedido continua nos totais');
+});
+
+test('entrega no Pix: não tem troco, nem se o campo vier preenchido', () => {
+  const t = texto(html(comPagamento('PIX', { trocoPara: '100.00' })));
+  assert.doesNotMatch(t, /TROCO|Paga com/);
+});
+
+test('entrega no cartão: cobra o total e não tem troco', () => {
+  const h = html(comPagamento('CARTAO'));
+  const t = texto(h);
+  assert.match(h, /<div class="cobrar">/);
+  assert.match(t, /COBRAR/);
+  assert.ok(t.includes(brl(64)));
+  assert.match(t, /Cartão/);
+  assert.doesNotMatch(h, /class="pago"/);
+  assert.doesNotMatch(t, /TROCO|PEDIDO PAGO|NÃO COBRAR/);
+});
+
+test('entrega em dinheiro: cobra o total e leva troco', () => {
+  const h = html(comPagamento('DINHEIRO'));
+  const t = texto(h);
+  assert.match(h, /<div class="cobrar">/);
+  assert.doesNotMatch(h, /class="pago"/);
+  assert.ok(t.includes(`LEVAR ${brl(36)} DE TROCO`));
+  assert.doesNotMatch(t, /NÃO COBRAR/);
+});
+
+test('ordem das seções no Pix: o bloco PAGO ocupa o lugar do COBRAR', () => {
+  const t = texto(html(comPagamento('PIX')));
+  const i = (re) => t.search(re);
+  assert.ok(i(/ENDEREÇO/) < i(/PEDIDO PAGO/) && i(/PEDIDO PAGO/) < i(/OBS: Tocar/) && i(/OBS: Tocar/) < i(/ITENS/));
+});
+
+test('retirada: Pix aparece como pago; em dinheiro o troco é para DEVOLVER no balcão', () => {
+  const retirada = { tipoEntrega: 'RETIRADA', enderecoEntregaSnapshot: null, taxaEntrega: '0.00' };
+  const pix = texto(html(comPagamento('PIX', retirada)));
+  assert.match(pix, /Pagamento Pix \(pago\)/);
+  assert.doesNotMatch(pix, /COBRAR|PEDIDO PAGO|TROCO/);
+  const dinheiroRetirada = texto(html(comPagamento('DINHEIRO', retirada)));
+  assert.match(dinheiroRetirada, /Pagamento Dinheiro/);
+  assert.doesNotMatch(dinheiroRetirada, /\(pago\)/);
+  assert.ok(dinheiroRetirada.includes(`DEVOLVER ${brl(36)} DE TROCO`));
+  assert.doesNotMatch(dinheiroRetirada, /LEVAR/);
+});
+
+test('o bloco "pago" tem o mesmo desenho do "cobrar" e também encolhe em 58 mm', () => {
+  const h = html();
+  assert.match(h, /\.cobrar, \.pago \{ margin: 10px 0 4px;/);
+  const media = h.indexOf('@media (max-width: 64mm)');
+  assert.ok(h.indexOf('.cobrar .valor, .pago .valor { font-size: 26px; }', media) > media);
+});
