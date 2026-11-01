@@ -88,10 +88,19 @@ function PedidoDetalheContent({
   const [motivoCancelamento, setMotivoCancelamento] = useState("");
   const showToast = useToastStore((s) => s.show);
   const nomeLoja = useMarcaStore((s) => s.nome);
+  const enderecoLoja = useMarcaStore((s) => s.enderecoLoja);
+  const whatsappLoja = useMarcaStore((s) => s.whatsappLoja);
+  const instagramLoja = useMarcaStore((s) => s.instagram);
 
   const handleImprimir = () => {
     if (!pedido) return;
-    if (!imprimirNotinha(pedido, nomeLoja)) {
+    const loja = {
+      nome: nomeLoja,
+      endereco: enderecoLoja,
+      telefone: whatsappLoja,
+      instagram: instagramLoja,
+    };
+    if (!imprimirNotinha(pedido, loja)) {
       showToast("Não foi possível abrir a impressão. Permita pop-ups neste site.", "error");
     }
   };
