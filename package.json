@@ -13,7 +13,7 @@
     "test:security": "node --test src/lib/*.test.cjs"
   },
   "dependencies": {
-    "@hookform/resolvers": "^5.2.2",
+    "@hookform/resolvers": "^6.0.2",
     "axios": "^1.15.0",
     "lucide-react": "^1.8.0",
     "next": "16.4.3",
