@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { api, mensagemErroApi } from "@/lib/api";
+import { linkMapa } from "@/lib/mapa";
 import {
   contatoDoPedido,
   formatBRL,
@@ -42,11 +43,6 @@ function enderecoEmLinha(e: EnderecoSnapshot): string {
   ]
     .filter(Boolean)
     .join(" - ");
-}
-
-function linkMapa(e: EnderecoSnapshot): string {
-  const q = `${e.logradouro}, ${e.numero} - ${e.bairro}, ${e.cidade} - ${e.uf}`;
-  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
 }
 
 function CardEntrega({
