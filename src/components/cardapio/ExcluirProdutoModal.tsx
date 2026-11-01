@@ -48,13 +48,6 @@ export function ExcluirProdutoModal({
         showToast("Produto não encontrado. A lista foi atualizada.", "info");
         onRefresh();
         onClose();
-      } else if (status === 409) {
-        // Produto com pedidos no histórico: não há o que tentar de novo.
-        showToast(
-          mensagemErroApi(err, "Este produto já foi vendido e não pode ser excluído."),
-          "error"
-        );
-        onClose();
       } else {
         showToast(mensagemErroApi(err, "Não foi possível excluir o produto."), "error");
       }
@@ -82,12 +75,11 @@ export function ExcluirProdutoModal({
     >
       <p className="text-sm text-gray-700">
         Tem certeza que deseja excluir{" "}
-        <strong className="break-words text-gray-900">{produto?.nome}</strong>? Essa
-        ação não pode ser desfeita.
+        <strong className="break-words text-gray-900">{produto?.nome}</strong>? Ele sai
+        do cardápio e do site.
       </p>
       <p className="mt-3 text-sm text-gray-500">
-        Produtos que já foram vendidos não podem ser excluídos, pois fazem parte
-        do histórico de pedidos. Nesse caso, desative o produto.
+        Pedidos antigos que incluem esse produto continuam no histórico.
       </p>
     </Modal>
   );
