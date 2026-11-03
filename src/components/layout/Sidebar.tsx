@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -15,6 +15,7 @@ import {
   Store,
   KeyRound,
   Palette,
+  Boxes,
 } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import { useNotificacaoStore } from "@/store/notificacaoStore";
@@ -24,6 +25,8 @@ import { getDefaultRoute } from "@/lib/painel-routes";
 import { SenhaModal } from "@/components/usuarios/SenhaModal";
 import { nomeCurtoLoja } from "@/lib/marca";
 import { useMarcaStore } from "@/store/marcaStore";
+import { useEstoqueStore } from "@/store/estoqueStore";
+import { menuEstoqueVisivel } from "@/lib/estoque";
 import { LogoLoja } from "./LogoLoja";
 
 interface NavItem {
@@ -33,6 +36,8 @@ interface NavItem {
   profiles: PerfilUsuario[];
   grupo: "operacao" | "gestao";
   badge?: boolean;
+  /** Só aparece quando o dono habilitou o módulo de estoque. */
+  exigeEstoque?: boolean;
 }
 
 const items: NavItem[] = [
@@ -73,6 +78,14 @@ const items: NavItem[] = [
     grupo: "gestao",
   },
   {
+    href: "/estoque",
+    label: "Estoque",
+    icon: Boxes,
+    profiles: ["ADMIN", "ATENDENTE"],
+    grupo: "gestao",
+    exigeEstoque: true,
+  },
+  {
     href: "/entregadores",
     label: "Entregadores",
     icon: Bike,
@@ -106,11 +119,32 @@ export function Sidebar({ open, onClose }: SidebarProps) {
   const novosCount = useNotificacaoStore((s) => s.novosCount);
   const [senhaAberta, setSenhaAberta] = useState(false);
   const nomeLoja = useMarcaStore((s) => s.nome);
+  const estoqueConfig = useEstoqueStore((s) => s.config);
+  const aRepor = useEstoqueStore((s) => s.aRepor);
+  const carregarEstoque = useEstoqueStore((s) => s.carregarConfig);
+  const carregarSelo = useEstoqueStore((s) => s.carregarSelo);
+  const perfil = funcionario?.perfil;
+
+  // Só ADMIN e ATENDENTE conhecem o módulo; os demais perfis nem consultam.
+  useEffect(() => {
+    if (perfil === "ADMIN" || perfil === "ATENDENTE") void carregarEstoque();
+  }, [perfil, carregarEstoque]);
+
+  // O selo de itens a repor mostra custos agregados: só ADMIN, a cada 60 s.
+  const estoqueHabilitado = !!estoqueConfig?.habilitado;
+  useEffect(() => {
+    if (perfil !== "ADMIN" || !estoqueHabilitado) return;
+    void carregarSelo();
+    const timer = setInterval(() => void carregarSelo(), 60_000);
+    return () => clearInterval(timer);
+  }, [perfil, estoqueHabilitado, carregarSelo]);
 
   if (!funcionario) return null;
 
-  const visibleItems = items.filter((it) =>
-    it.profiles.includes(funcionario.perfil)
+  const visibleItems = items.filter(
+    (it) =>
+      it.profiles.includes(funcionario.perfil) &&
+      (!it.exigeEstoque || menuEstoqueVisivel(funcionario.perfil, estoqueConfig))
   );
 
   const grupos: { id: NavItem["grupo"]; titulo: string }[] = [
@@ -180,6 +214,14 @@ export function Sidebar({ open, onClose }: SidebarProps) {
                         {item.badge && novosCount > 0 && (
                           <span className="flex h-5 min-w-5 items-center justify-center rounded bg-primary-500 px-1.5 text-xs font-semibold text-white">
                             {novosCount}
+                          </span>
+                        )}
+                        {item.exigeEstoque && funcionario.perfil === "ADMIN" && aRepor > 0 && (
+                          <span
+                            className="flex h-5 min-w-5 items-center justify-center rounded bg-red-600 px-1.5 text-xs font-semibold text-white"
+                            title="Itens a repor ou baixas pendentes"
+                          >
+                            {aRepor}
                           </span>
                         )}
                       </Link>

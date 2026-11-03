@@ -11,7 +11,9 @@ import { produtoSchema, type ProdutoInput } from "@/lib/validators";
 import { api } from "@/lib/api";
 import { resolveImageUrl } from "@/lib/format";
 import { useToastStore } from "@/store/toastStore";
+import { useEstoqueStore } from "@/store/estoqueStore";
 import type { Categoria, Ingrediente, Produto } from "@/types";
+import type { FichaProduto } from "@/types/estoque";
 
 type VarianteRow = {
   key: string;
@@ -54,6 +56,7 @@ export function ProdutoModal({
   const [destaque, setDestaque] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const showToast = useToastStore((s) => s.show);
+  const estoqueHabilitado = useEstoqueStore((s) => !!s.config?.habilitado);
 
   const {
     register,
@@ -178,6 +181,35 @@ export function ProdutoModal({
       if (isNaN(preco) || preco < 0) {
         showToast(`Preço inválido na variante "${v.nome}"`, "error");
         return;
+      }
+    }
+
+    // Variante removida leva junto a ficha técnica dela (ON DELETE CASCADE): avisa antes.
+    if (produto && estoqueHabilitado) {
+      const removidas = (produto.variantes ?? []).filter(
+        (antiga) => !variantes.some((v) => v.id === antiga.id)
+      );
+      if (removidas.length > 0) {
+        try {
+          const { data: ficha } = await api.get<FichaProduto>(
+            `/admin/estoque/fichas/${produto.id}`
+          );
+          const comFicha = removidas.filter(
+            (r) => (ficha.variantes.find((v) => v.id === r.id)?.itens.length ?? 0) > 0
+          );
+          if (
+            comFicha.length > 0 &&
+            !window.confirm(
+              `A ficha técnica de estoque de ${comFicha
+                .map((v) => `"${v.nome}"`)
+                .join(", ")} será apagada junto com a variante. Remover mesmo assim?`
+            )
+          ) {
+            return;
+          }
+        } catch {
+          // Sem conseguir consultar a ficha, não trava o salvamento do produto.
+        }
       }
     }
 
