@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/Button";
 import { Input, Textarea } from "@/components/ui/Input";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { ControleMovimento } from "@/components/loja/ControleMovimento";
+import { CartaoControleEstoque } from "@/components/estoque/CartaoControleEstoque";
 import { api } from "@/lib/api";
 import { formatBRL, formatDataHora } from "@/lib/format";
 import { useAuthStore } from "@/store/authStore";
@@ -565,6 +566,8 @@ function LojaContent() {
           </div>
         )}
       </section>
+
+      {isAdmin && <CartaoControleEstoque />}
     </div>
   );
 }

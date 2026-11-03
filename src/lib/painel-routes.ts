@@ -25,8 +25,9 @@ const PREFIXOS_POR_PERFIL: Record<PerfilUsuario, string[]> = {
     "/entregadores",
     "/caixa",
     "/usuarios",
+    "/estoque",
   ],
-  ATENDENTE: ["/pedidos", "/loja", "/cardapio", "/entregadores", "/caixa"],
+  ATENDENTE: ["/pedidos", "/loja", "/cardapio", "/entregadores", "/caixa", "/estoque"],
   CHAPEIRO: ["/chapeiro"],
   ENTREGADOR: ["/entrega"],
 };
