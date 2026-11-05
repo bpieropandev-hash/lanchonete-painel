@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { lerValorCaixa, periodoValido } from "./caixa";
 
 export const loginSchema = z.object({
   email: z.string().email("E-mail inválido"),
@@ -14,7 +15,7 @@ export const produtoSchema = z.object({
     .string()
     .refine(
       (v) => !v || v.startsWith("/") || /^https?:\/\//.test(v),
-      "Informe uma URL válida ou faça upload de uma imagem"
+      "Informe uma URL válida ou faça upload de uma imagem",
     )
     .optional(),
   categoriaId: z.string().min(1, "Selecione uma categoria"),
@@ -91,18 +92,20 @@ export const redefinirSenhaSchema = z
   });
 export type RedefinirSenhaInput = z.infer<typeof redefinirSenhaSchema>;
 
-const valorOpcional = z
-  .string()
-  .optional()
-  .refine(
-    (v) => !v || !Number.isNaN(Number(v.replace(",", "."))),
-    "Valor inválido"
-  );
-
 export const fecharCaixaSchema = z.object({
   obs: z.string().max(500, "Máximo 500 caracteres").optional(),
-  fundoTroco: valorOpcional,
-  dinheiroConferido: valorOpcional,
+  fundoTroco: z
+    .string()
+    .refine(
+      (v) => lerValorCaixa(v, 100_000) !== null,
+      "Informe um valor válido de 0 a R$ 100.000,00",
+    ),
+  dinheiroConferido: z
+    .string()
+    .refine(
+      (v) => lerValorCaixa(v, 1_000_000) !== null,
+      "Informe o valor contado, de 0 a R$ 1.000.000,00",
+    ),
 });
 export type FecharCaixaInput = z.infer<typeof fecharCaixaSchema>;
 
@@ -114,8 +117,13 @@ export const reabrirCaixaSchema = z.object({
 });
 export type ReabrirCaixaInput = z.infer<typeof reabrirCaixaSchema>;
 
-export const periodoSchema = z.object({
-  dataInicio: z.string().min(1, "Data inicial obrigatória"),
-  dataFim: z.string().min(1, "Data final obrigatória"),
-});
+export const periodoSchema = z
+  .object({
+    dataInicio: z.string().min(1, "Data inicial obrigatória"),
+    dataFim: z.string().min(1, "Data final obrigatória"),
+  })
+  .refine((v) => periodoValido(v.dataInicio, v.dataFim), {
+    path: ["dataFim"],
+    message: "Escolha datas válidas em ordem, com até 366 dias",
+  });
 export type PeriodoInput = z.infer<typeof periodoSchema>;

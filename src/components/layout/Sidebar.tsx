@@ -94,7 +94,7 @@ const items: NavItem[] = [
   },
   {
     href: "/caixa",
-    label: "Caixa",
+    label: "Financeiro",
     icon: DollarSign,
     profiles: ["ADMIN", "ATENDENTE"],
     grupo: "operacao",

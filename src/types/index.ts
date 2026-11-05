@@ -262,6 +262,10 @@ export interface ListaPedidos {
 export interface FechamentoResponse {
   id: string | null;
   data: string;
+  /** Ausente em versões antigas da API, que agrupavam pela criação do pedido. */
+  criterioDataVenda?: "ENTREGA" | "CRIACAO";
+  horaCorteExpediente?: number;
+  divergenciaPosterior?: number | null;
   totalPix: number;
   totalDinheiro: number;
   totalCartao: number;
