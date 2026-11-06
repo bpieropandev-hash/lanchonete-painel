@@ -266,8 +266,8 @@ function ChapeiroPageContent() {
 
   const recentesVisiveis = recentes.filter((r) => agora - r.saiuEm < JANELA_DESFAZER_MS).slice(0, 5);
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     window.location.href = "/login";
   };
 
