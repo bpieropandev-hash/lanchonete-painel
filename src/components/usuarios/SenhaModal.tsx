@@ -12,9 +12,8 @@ import {
   type RedefinirSenhaInput,
   type SenhaInput,
 } from "@/lib/validators";
-import { api, mensagemErroApi, setTokens } from "@/lib/api";
+import { api, browserSession, getAccessToken, mensagemErroApi, setTokens } from "@/lib/api";
 import { useToastStore } from "@/store/toastStore";
-import type { AuthResponse } from "@/types";
 
 interface SenhaModalProps {
   open: boolean;
@@ -54,11 +53,10 @@ function MinhaSenhaModal({ open, onClose }: { open: boolean; onClose: () => void
     setSubmitting(true);
     try {
       // A troca encerra todas as sessões; a API devolve uma sessão nova.
-      const { data: sessao } = await api.patch<AuthResponse>("/auth/me/senha", {
-        senhaAtual: data.senhaAtual,
-        novaSenha: data.novaSenha,
-      });
-      setTokens(sessao.accessToken, sessao.refreshToken);
+      const access = getAccessToken();
+      if (!access) throw new Error("Sessão encerrada");
+      const { data: sessao } = await browserSession.password(access, data.senhaAtual, data.novaSenha);
+      setTokens(sessao.accessToken);
       showToast("Senha alterada. Outros aparelhos precisarão entrar de novo.", "success");
       onClose();
     } catch (err) {

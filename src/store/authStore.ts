@@ -1,7 +1,7 @@
 import { createGeneration, definitiveAuthFailure } from "@/lib/functional";
 import { create } from "zustand";
-import { api, clearTokens, getAccessToken, getRefreshToken, setTokens } from "@/lib/api";
-import type { AuthResponse, Funcionario, PerfilUsuario } from "@/types";
+import { api, browserSession, clearTokens, setTokens } from "@/lib/api";
+import type { Funcionario, PerfilUsuario } from "@/types";
 
 interface MeResponse {
   id?: string;
@@ -18,7 +18,7 @@ interface AuthStore {
   isHydrating: boolean;
   hasHydrated: boolean;
   login: (email: string, senha: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   hydrate: () => Promise<void>;
 }
 
@@ -36,31 +36,26 @@ export const useAuthStore = create<AuthStore>((set) => ({
     hydratePromise = null;
     const current = session.begin();
     set({ hydrationError: null });
-    const { data } = await api.post<AuthResponse>("/auth/funcionario/login", {
-      email,
-      senha,
-    });
+    const { data } = await browserSession.login(email, senha);
     if (!current()) return;
-    setTokens(data.accessToken, data.refreshToken);
+    setTokens(data.accessToken);
     const funcionario: Funcionario = {
-      id: data.usuario.id,
-      nome: data.usuario.nome,
-      email: data.usuario.email || email,
+      id: String(data.usuario.id),
+      nome: String(data.usuario.nome),
+      email: String(data.usuario.email || email),
       perfil: (data.usuario.perfil || "ATENDENTE") as PerfilUsuario,
     };
     set({ funcionario, isAuthenticated: true, hasHydrated: true, isHydrating: false });
   },
 
-  logout: () => {
+  logout: async () => {
     hydratePromise = null;
     session.begin();
     set({ hydrationError: null });
-    const refreshToken = getRefreshToken();
-    if (refreshToken) void api.post("/auth/logout", { refreshToken }, {
-      timeout: 5000, headers: { Authorization: `Bearer ${getAccessToken() ?? ""}` },
-    }).catch(() => undefined);
+    const revogacao = browserSession.logout();
     clearTokens();
     set({ funcionario: null, isAuthenticated: false, isHydrating: false, hasHydrated: true });
+    await revogacao.catch(() => undefined);
   },
 
   hydrate: () => {
@@ -68,13 +63,11 @@ export const useAuthStore = create<AuthStore>((set) => ({
     const task = (async () => {
       const current = session.begin();
       set({ hydrationError: null, isHydrating: true });
-      const token = getAccessToken();
-      if (!token && !getRefreshToken()) {
-        set({ hasHydrated: true, isHydrating: false });
-        return;
-      }
       set({ isHydrating: true });
       try {
+        const { data: sessionData } = await browserSession.refresh();
+        if (!current()) return;
+        setTokens(sessionData.accessToken);
         const { data } = await api.get<MeResponse>("/auth/me");
         if (!current()) return;
         const funcionario: Funcionario = {
