@@ -127,8 +127,10 @@ export function montarNotinhaHtml(
   @page { margin: 0; }
   * { box-sizing: border-box; }
   body {
-    /* Largura fixa em mm: não depende da janela nem do que o driver informa. */
-    margin: 0; width: ${papelMm}mm; padding: 3mm ${estreito ? 5 : 4}mm 8mm;
+    /* Área útil do papel (48 mm em 58, 72 mm em 80), nunca maior que a página
+       que o driver informa: o papel de 58 mm só imprime ~48 mm, e um corpo de
+       58 mm estoura a área impressa e corta a direita. */
+    margin: 0 auto; width: 100%; max-width: ${estreito ? 48 : 72}mm; padding: 3mm 1.5mm 8mm;
     font-family: "Liberation Mono", "DejaVu Sans Mono", Consolas, Menlo, "Courier New", monospace;
     font-size: ${estreito ? 10 : 11}px; line-height: 1.4; color: #000; background: #fff; overflow-wrap: anywhere;
   }
