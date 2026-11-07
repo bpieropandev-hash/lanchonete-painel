@@ -174,10 +174,10 @@ test('papel: largura fixa em mm, margem zero e sem "size: 80mm auto" (CSS invál
   const h58 = html();
   assert.match(h58, /@page \{ margin: 0; \}/, 'margem 0 também remove cabeçalho/rodapé do navegador');
   assert.doesNotMatch(h58, /size:\s*80mm\s+auto/);
-  assert.match(h58, /width: 58mm; padding: 3mm 5mm 8mm/, '58 mm padrão: 48 mm úteis');
+  assert.match(h58, /width: 100%; max-width: 48mm; padding: 3mm 1.5mm 8mm/, '58 mm padrão: 48 mm úteis, nunca maior que a página');
   assert.doesNotMatch(h58, /@media/, 'sem media query: a largura não depende do driver');
   const h80 = montarNotinhaHtml(base, undefined, 80);
-  assert.match(h80, /width: 80mm; padding: 3mm 4mm 8mm/, '80 mm: 72 mm úteis');
+  assert.match(h80, /max-width: 72mm/, '80 mm: 72 mm úteis');
 });
 
 test('telefone e CEP não quebram no meio; valores não quebram', () => {
