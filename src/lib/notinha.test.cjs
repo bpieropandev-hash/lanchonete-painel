@@ -170,24 +170,14 @@ test('usa o contato da conta quando o pedido não tem contato de convidado', () 
   assert.match(t, /Cliente Cadastrado Tel \(12\) 3333-4444/);
 });
 
-test('papel: largura útil, margem zero e sem "size: 80mm auto" (CSS inválido)', () => {
-  const h = html();
-  assert.match(h, /@page \{ margin: 0; \}/, 'margem 0 também remove cabeçalho/rodapé do navegador');
-  assert.doesNotMatch(h, /size:\s*80mm\s+auto/);
-  assert.match(h, /max-width: 80mm/);
-  assert.match(h, /padding: 3mm 4mm 8mm/, '4 mm de cada lado = 72 mm úteis em 80 mm');
-  assert.match(h, /@media \(max-width: 64mm\)/, 'ajuste para papel de 58 mm');
-});
-
-test('papel de 58 mm: o bloco @media vem DEPOIS das regras base (senão não vence na cascata)', () => {
-  const h = html();
-  const media = h.indexOf('@media (max-width: 64mm)');
-  for (const regra of ['.loja {', '.pedido {', '.total {', '.dados {']) {
-    assert.ok(media > h.indexOf(regra), `${regra} precisa vir antes do @media`);
-  }
-  for (const regra of ['.loja { font-size', '.pedido { font-size', '.total { font-size']) {
-    assert.ok(h.indexOf(regra, media) > media, `@media deve redefinir ${regra}`);
-  }
+test('papel: largura fixa em mm, margem zero e sem "size: 80mm auto" (CSS inválido)', () => {
+  const h58 = html();
+  assert.match(h58, /@page \{ margin: 0; \}/, 'margem 0 também remove cabeçalho/rodapé do navegador');
+  assert.doesNotMatch(h58, /size:\s*80mm\s+auto/);
+  assert.match(h58, /width: 58mm; padding: 3mm 5mm 8mm/, '58 mm padrão: 48 mm úteis');
+  assert.doesNotMatch(h58, /@media/, 'sem media query: a largura não depende do driver');
+  const h80 = montarNotinhaHtml(base, undefined, 80);
+  assert.match(h80, /width: 80mm; padding: 3mm 4mm 8mm/, '80 mm: 72 mm úteis');
 });
 
 test('telefone e CEP não quebram no meio; valores não quebram', () => {

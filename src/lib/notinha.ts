@@ -19,6 +19,10 @@ export interface DadosLoja {
   instagram?: string | null;
 }
 
+/** Largura do papel da bobina. A Knup KP-IM607 usa 58 mm (48 mm úteis). */
+export type PapelMm = 58 | 80;
+export const PAPEL_PADRAO: PapelMm = 58;
+
 /** Todo texto vindo do cliente passa por aqui antes de entrar no HTML. */
 function esc(valor: unknown): string {
   return String(valor ?? "")
@@ -49,15 +53,17 @@ function esc(valor: unknown): string {
  *      como PAGO, pela mesma regra da tela do entregador (`cobrancaDoPedido`).
  *   8. Observação do pedido e agradecimento.
  *
- * Largura útil do papel: 72 mm em 80 mm e 48 mm em 58 mm. `@page { margin: 0 }`
+ * Largura útil do papel: 72 mm em 80 mm e 48 mm em 58 mm (padrão, KP-IM607). `@page { margin: 0 }`
  * (também impede o navegador de imprimir cabeçalho e rodapé dele) e margens
  * internas que deixam só a área útil. Só preto e branco, fonte monoespaçada,
  * um único tamanho de texto com poucos destaques em negrito.
  */
 export function montarNotinhaHtml(
   pedido: Pedido,
-  loja: DadosLoja = { nome: NOME_LOJA }
+  loja: DadosLoja = { nome: NOME_LOJA },
+  papelMm: PapelMm = PAPEL_PADRAO
 ): string {
+  const estreito = papelMm === 58;
   const retirada = pedido.tipoEntrega === "RETIRADA";
   const contato = contatoDoPedido(pedido);
   const end = pedido.enderecoEntregaSnapshot;
@@ -121,16 +127,17 @@ export function montarNotinhaHtml(
   @page { margin: 0; }
   * { box-sizing: border-box; }
   body {
-    margin: 0; width: 100%; max-width: 80mm; padding: 3mm 4mm 8mm;
+    /* Largura fixa em mm: não depende da janela nem do que o driver informa. */
+    margin: 0; width: ${papelMm}mm; padding: 3mm ${estreito ? 5 : 4}mm 8mm;
     font-family: "Liberation Mono", "DejaVu Sans Mono", Consolas, Menlo, "Courier New", monospace;
-    font-size: 11px; line-height: 1.4; color: #000; background: #fff; overflow-wrap: anywhere;
+    font-size: ${estreito ? 10 : 11}px; line-height: 1.4; color: #000; background: #fff; overflow-wrap: anywhere;
   }
-  .loja { text-align: center; font-weight: 700; font-size: 15px; letter-spacing: 0.5px; }
-  .dados { text-align: center; font-size: 10px; margin-top: 2px; }
+  .loja { text-align: center; font-weight: 700; font-size: ${estreito ? 14 : 15}px; letter-spacing: 0.5px; }
+  .dados { text-align: center; font-size: ${estreito ? 9 : 10}px; margin-top: 2px; }
   .tr { margin: 7px 0; border: 0; border-top: 1px dashed #000; }
   .titulo { text-align: center; font-weight: 700; font-size: 12px; letter-spacing: 1px; }
-  .aviso { text-align: center; font-weight: 700; font-size: 10px; }
-  .pedido { font-size: 16px; font-weight: 700; }
+  .aviso { text-align: center; font-weight: 700; font-size: ${estreito ? 9 : 10}px; }
+  .pedido { font-size: ${estreito ? 14 : 16}px; font-weight: 700; }
   h2 { margin: 8px 0 2px; font-size: 11px; font-weight: 700; letter-spacing: 1px; }
   .linha { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; }
   .linha span:last-child { white-space: nowrap; text-align: right; }
@@ -139,16 +146,8 @@ export function montarNotinhaHtml(
   .item { margin-top: 5px; }
   .nome { font-weight: 700; }
   .det { padding-left: 2ch; }
-  .total { margin-top: 4px; padding-top: 3px; border-top: 1px solid #000; font-size: 14px; font-weight: 700; }
+  .total { margin-top: 4px; padding-top: 3px; border-top: 1px solid #000; font-size: ${estreito ? 13 : 14}px; font-weight: 700; }
   .rodape { margin-top: 2px; text-align: center; }
-  /* Papel estreito (58 mm, 48 mm úteis). Fica por último para vencer as regras acima. */
-  @media (max-width: 64mm) {
-    body { padding-left: 5mm; padding-right: 5mm; font-size: 10px; }
-    .loja { font-size: 14px; }
-    .dados, .aviso { font-size: 9px; }
-    .pedido { font-size: 14px; }
-    .total { font-size: 13px; }
-  }
 </style></head><body>
   <div class="loja">${esc(loja.nome.toLocaleUpperCase("pt-BR"))}</div>
   ${dadosLoja.length ? `<div class="dados">${dadosLoja.map(esc).join("<br>")}</div>` : ""}
@@ -190,12 +189,13 @@ export function montarNotinhaHtml(
  */
 export function imprimirNotinha(
   pedido: Pedido,
-  loja: DadosLoja = { nome: NOME_LOJA }
+  loja: DadosLoja = { nome: NOME_LOJA },
+  papelMm: PapelMm = PAPEL_PADRAO
 ): boolean {
   const janela = window.open("", "_blank", "width=420,height=640");
   if (!janela) return false;
   janela.document.open();
-  janela.document.write(montarNotinhaHtml(pedido, loja));
+  janela.document.write(montarNotinhaHtml(pedido, loja, papelMm));
   janela.document.close();
   janela.focus();
   janela.onafterprint = () => janela.close();
