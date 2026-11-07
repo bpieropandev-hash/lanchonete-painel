@@ -7,6 +7,26 @@ export const loginSchema = z.object({
 });
 export type LoginInput = z.infer<typeof loginSchema>;
 
+export const esqueciSenhaSchema = z.object({
+  email: z.string().trim().min(1, "Informe o e-mail").email("E-mail inválido"),
+});
+export type EsqueciSenhaInput = z.infer<typeof esqueciSenhaSchema>;
+
+// 10 caracteres e no máximo 72 bytes: mesma regra da API para funcionários.
+export const novaSenhaPorEmailSchema = z
+  .object({
+    novaSenha: z
+      .string()
+      .min(10, "Mínimo 10 caracteres")
+      .refine((v) => new TextEncoder().encode(v).length <= 72, "Senha muito longa"),
+    confirmar: z.string().min(1, "Confirme a nova senha"),
+  })
+  .refine((d) => d.novaSenha === d.confirmar, {
+    message: "As senhas não conferem",
+    path: ["confirmar"],
+  });
+export type NovaSenhaPorEmailInput = z.infer<typeof novaSenhaPorEmailSchema>;
+
 export const produtoSchema = z.object({
   nome: z.string().min(2, "Mínimo 2 caracteres"),
   descricao: z.string().min(5, "Mínimo 5 caracteres"),

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -84,6 +85,12 @@ export default function LoginPage() {
               {...register("senha")}
               error={errors.senha?.message}
             />
+            <Link
+              href="/esqueci-senha"
+              className="block text-right text-sm font-medium text-gray-700 hover:underline"
+            >
+              Esqueci minha senha
+            </Link>
           </div>
 
           <Button

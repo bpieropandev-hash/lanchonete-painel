@@ -10,3 +10,9 @@ export function createGeneration() {
     capture() { const own = generation; return () => own === generation; },
   };
 }
+
+/** O token de redefinição vem no fragmento (#t=...): não vai para logs do servidor nem para o Referer. */
+export function lerTokenDoFragmento(hash: string): string | null {
+  const token = new URLSearchParams(hash.replace(/^#/, "")).get("t");
+  return token && token.length <= 200 ? token : null;
+}
