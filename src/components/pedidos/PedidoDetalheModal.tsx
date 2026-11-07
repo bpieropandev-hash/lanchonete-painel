@@ -26,7 +26,7 @@ import {
   statusLabel,
   tipoPagamentoLabel,
 } from "@/lib/format";
-import { imprimirNotinha, PAPEL_PADRAO, type PapelMm } from "@/lib/notinha";
+import { imprimirNotinha } from "@/lib/notinha";
 import { useMarcaStore } from "@/store/marcaStore";
 import { useToastStore } from "@/store/toastStore";
 import type { Pedido, StatusPedido, TipoEntrega } from "@/types";
@@ -92,18 +92,6 @@ function PedidoDetalheContent({
   const whatsappLoja = useMarcaStore((s) => s.whatsappLoja);
   const instagramLoja = useMarcaStore((s) => s.instagram);
 
-  const [papel, setPapel] = useState<PapelMm>(PAPEL_PADRAO);
-  useEffect(() => {
-    try {
-      const salvo = Number(localStorage.getItem("notinha-papel-mm"));
-      if (salvo === 58 || salvo === 80) setPapel(salvo);
-    } catch {}
-  }, []);
-  const escolherPapel = (v: PapelMm) => {
-    setPapel(v);
-    try { localStorage.setItem("notinha-papel-mm", String(v)); } catch {}
-  };
-
   const handleImprimir = () => {
     if (!pedido) return;
     const loja = {
@@ -112,7 +100,7 @@ function PedidoDetalheContent({
       telefone: whatsappLoja,
       instagram: instagramLoja,
     };
-    if (!imprimirNotinha(pedido, loja, papel)) {
+    if (!imprimirNotinha(pedido, loja)) {
       showToast("Não foi possível abrir a impressão. Permita pop-ups neste site.", "error");
     }
   };
@@ -271,26 +259,15 @@ function PedidoDetalheContent({
         <p className="py-8 text-center text-sm text-gray-500">Carregando...</p>
       ) : (
         <div className="space-y-4 text-sm">
-          <div className="flex items-center gap-2">
-            <Button
-              variant="secondary"
-              size="sm"
-              fullWidth
-              onClick={handleImprimir}
-              leftIcon={<Printer size={16} />}
-            >
-              Imprimir notinha
-            </Button>
-            <select
-              aria-label="Largura do papel"
-              value={papel}
-              onChange={(e) => escolherPapel(Number(e.target.value) as PapelMm)}
-              className="rounded-md border border-gray-300 bg-white px-2 py-1.5 text-xs"
-            >
-              <option value={58}>58 mm</option>
-              <option value={80}>80 mm</option>
-            </select>
-          </div>
+          <Button
+            variant="secondary"
+            size="sm"
+            fullWidth
+            onClick={handleImprimir}
+            leftIcon={<Printer size={16} />}
+          >
+            Imprimir notinha
+          </Button>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <p className="text-xs font-medium text-gray-500">Status</p>
