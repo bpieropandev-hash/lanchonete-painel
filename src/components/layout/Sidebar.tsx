@@ -256,8 +256,8 @@ export function Sidebar({ open, onClose }: SidebarProps) {
               Alterar senha
             </button>
             <button
-              onClick={() => {
-                logout();
+              onClick={async () => {
+                await logout();
                 window.location.href = "/login";
               }}
               className="flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-md px-1.5 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-100 hover:text-red-600"

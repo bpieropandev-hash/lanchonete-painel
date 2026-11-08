@@ -7,31 +7,73 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api/v1
 export const ACCESS_TOKEN_KEY = "painel:accessToken";
 export const REFRESH_TOKEN_KEY = "painel:refreshToken";
 
+let accessToken: string | null = null;
+let tokenVersion = 0;
+if (typeof window !== "undefined") {
+  try {
+    localStorage.removeItem(ACCESS_TOKEN_KEY);
+    localStorage.removeItem(REFRESH_TOKEN_KEY);
+  } catch { /* armazenamento indisponível */ }
+}
+
+export interface BrowserSessionResponse {
+  accessToken: string;
+  expiresIn: number;
+  usuario: Record<string, unknown>;
+}
+
+export const browserSession = {
+  login(email: string, senha: string) {
+    return withRefreshLock("painel:auth-refresh", () => axios.post<BrowserSessionResponse>("/api/session/login", { email, senha }, {
+      headers: { "X-Session-Intent": "browser" }, timeout: 10_000,
+    }));
+  },
+  refresh() {
+    return withRefreshLock("painel:auth-refresh", () => axios.post<BrowserSessionResponse>("/api/session/refresh", {}, {
+      headers: { "X-Session-Intent": "browser" }, timeout: 10_000,
+    }));
+  },
+  logout() {
+    return withRefreshLock("painel:auth-refresh", () => axios.post("/api/session/logout", {}, {
+      headers: { "X-Session-Intent": "browser" }, timeout: 10_000,
+    }));
+  },
+  password(access: string, senhaAtual: string, novaSenha: string) {
+    return withRefreshLock("painel:auth-refresh", () => axios.post<BrowserSessionResponse>("/api/session/password", { senhaAtual, novaSenha }, {
+      headers: { "X-Session-Intent": "browser", Authorization: `Bearer ${access}` }, timeout: 10_000,
+    }));
+  },
+};
+
 export const api = axios.create({
   baseURL: API_URL,
   headers: { "Content-Type": "application/json" },
 });
 
 export function getAccessToken(): string | null {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem(ACCESS_TOKEN_KEY);
+  return accessToken;
 }
 
-export function getRefreshToken(): string | null {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem(REFRESH_TOKEN_KEY);
-}
-
-export function setTokens(accessToken: string, refreshToken: string): void {
-  if (typeof window === "undefined") return;
-  localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
-  localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
+export function setTokens(access: string): void {
+  accessToken = access;
+  tokenVersion++;
+  if (typeof window !== "undefined") {
+    try {
+      localStorage.removeItem(ACCESS_TOKEN_KEY);
+      localStorage.removeItem(REFRESH_TOKEN_KEY);
+    } catch { /* armazenamento indisponível */ }
+  }
 }
 
 export function clearTokens(): void {
-  if (typeof window === "undefined") return;
-  localStorage.removeItem(ACCESS_TOKEN_KEY);
-  localStorage.removeItem(REFRESH_TOKEN_KEY);
+  accessToken = null;
+  tokenVersion++;
+  if (typeof window !== "undefined") {
+    try {
+      localStorage.removeItem(ACCESS_TOKEN_KEY);
+      localStorage.removeItem(REFRESH_TOKEN_KEY);
+    } catch { /* armazenamento indisponível */ }
+  }
 }
 
 api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
@@ -65,30 +107,24 @@ api.interceptors.response.use(
     const failedAccess = sentAuthorization.startsWith("Bearer ") ? sentAuthorization.slice(7) : null;
 
     if (!refreshFlight) {
-      refreshFlight = withRefreshLock("painel:auth-refresh", async () => {
+      refreshFlight = (async () => {
         // Another tab may have rotated the family while this request waited for the lock.
         const currentAccess = getAccessToken();
-        const refreshToken = getRefreshToken();
         if (currentAccess && currentAccess !== failedAccess) return currentAccess;
-        if (!refreshToken) {
-          clearTokens();
-          if (typeof window !== "undefined") window.location.href = "/login";
-          throw error;
-        }
+        const version = tokenVersion;
         try {
-          const response = await axios.post(`${API_URL}/auth/refresh`, { refreshToken }, { timeout: 10_000 });
-          const data = response.data?.data ?? response.data;
-          if (getRefreshToken() !== refreshToken) throw new Error("Sessão alterada");
-          setTokens(data.accessToken, data.refreshToken);
+          const { data } = await browserSession.refresh();
+          if (tokenVersion !== version) throw new Error("Sessão alterada");
+          setTokens(data.accessToken);
           return data.accessToken as string;
         } catch (refreshError) {
-          if (definitiveAuthFailure(refreshError) && getRefreshToken() === refreshToken) {
+          if (definitiveAuthFailure(refreshError) && tokenVersion === version) {
             clearTokens();
             if (typeof window !== "undefined") window.location.href = "/login";
           }
           throw refreshError;
         }
-      });
+      })();
     }
     const flight = refreshFlight;
     try {
