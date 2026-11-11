@@ -19,7 +19,7 @@ export interface DadosLoja {
   instagram?: string | null;
 }
 
-/** Largura do papel da bobina. A Knup KP-IM607 usa 58 mm (48 mm úteis). */
+/** Largura do papel da bobina. A Knup KP-IM607 usa 58 mm (43 mm de texto, medido). */
 export type PapelMm = 58 | 80;
 export const PAPEL_PADRAO: PapelMm = 58;
 
@@ -53,7 +53,7 @@ function esc(valor: unknown): string {
  *      como PAGO, pela mesma regra da tela do entregador (`cobrancaDoPedido`).
  *   8. Observação do pedido e agradecimento.
  *
- * Largura útil do papel: 72 mm em 80 mm e 48 mm em 58 mm (padrão, KP-IM607). `@page { margin: 0 }`
+ * Largura útil do papel: 72 mm em 80 mm e 43 mm em 58 mm (padrão, medida na KP-IM607). `@page { margin: 0 }`
  * (também impede o navegador de imprimir cabeçalho e rodapé dele) e margens
  * internas que deixam só a área útil. Só preto e branco, fonte monoespaçada,
  * um único tamanho de texto com poucos destaques em negrito.
@@ -127,12 +127,12 @@ export function montarNotinhaHtml(
   @page { margin: 0; }
   * { box-sizing: border-box; }
   body {
-    /* Área útil do papel (48 mm em 58, 72 mm em 80), nunca maior que a página
-       do driver. Alinhado à esquerda (a cabeça da térmica começa na borda) e com
-       folga à direita: a KP-IM607 perdia o último caractere de cada linha. */
-    margin: 0; width: 100%; max-width: ${estreito ? 48 : 72}mm;
-    padding: 3mm ${estreito ? 5 : 3}mm 8mm 1mm;
-    font-family: "Liberation Mono", "DejaVu Sans Mono", Consolas, Menlo, "Courier New", monospace;
+    /* 58 mm: valores medidos na KP-IM607 (calibração impressa): 5 mm à esquerda
+       e 10 mm à direita deixam 43 mm de texto, sem perder o fim das linhas.
+       Sempre limitado à página do driver (width: 100%). */
+    margin: 0; width: 100%; max-width: ${estreito ? 58 : 72}mm;
+    padding: 3mm ${estreito ? 10 : 3}mm 8mm ${estreito ? 5 : 1}mm;
+    font-family: "Courier New", "Liberation Mono", "DejaVu Sans Mono", Consolas, Menlo, monospace;
     font-size: ${estreito ? 10 : 11}px; line-height: 1.4; color: #000; background: #fff; overflow-wrap: anywhere;
   }
   .loja { text-align: center; font-weight: 700; font-size: ${estreito ? 14 : 15}px; letter-spacing: 0.5px; }
