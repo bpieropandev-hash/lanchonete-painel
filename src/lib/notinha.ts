@@ -132,13 +132,16 @@ export function montarNotinhaHtml(
        Sempre limitado à página do driver (width: 100%). */
     margin: 0; width: 100%; max-width: ${estreito ? 58 : 72}mm;
     padding: 3mm ${estreito ? 10 : 3}mm 8mm ${estreito ? 5 : 1}mm;
-    font-family: "Courier New", "Liberation Mono", "DejaVu Sans Mono", Consolas, Menlo, monospace;
+    font-family: "Liberation Mono", "DejaVu Sans Mono", Consolas, Menlo, "Courier New", monospace;
+    /* Negrito em tudo: na térmica o traço normal sai claro e perde pedaços da
+       letra (testado na KP-IM607). A largura do monoespaçado não muda. */
+    font-weight: 700;
     font-size: ${estreito ? 10 : 11}px; line-height: 1.4; color: #000; background: #fff; overflow-wrap: anywhere;
   }
   .loja { text-align: center; font-weight: 700; font-size: ${estreito ? 14 : 15}px; letter-spacing: 0.5px; }
   .dados { text-align: center; font-size: ${estreito ? 9 : 10}px; margin-top: 2px; }
   .tr { margin: 7px 0; border: 0; border-top: 1px dashed #000; }
-  .titulo { text-align: center; font-weight: 700; font-size: 12px; letter-spacing: 1px; }
+  .titulo { text-align: center; font-weight: 700; font-size: 11px; letter-spacing: 0.5px; }
   .aviso { text-align: center; font-weight: 700; font-size: ${estreito ? 9 : 10}px; }
   .pedido { font-size: ${estreito ? 14 : 16}px; font-weight: 700; }
   h2 { margin: 8px 0 2px; font-size: 11px; font-weight: 700; letter-spacing: 1px; }
