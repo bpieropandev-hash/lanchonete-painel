@@ -174,7 +174,8 @@ test('papel: largura fixa em mm, margem zero e sem "size: 80mm auto" (CSS invál
   const h58 = html();
   assert.match(h58, /@page \{ margin: 0; \}/, 'margem 0 também remove cabeçalho/rodapé do navegador');
   assert.doesNotMatch(h58, /size:\s*80mm\s+auto/);
-  assert.match(h58, /width: 100%; max-width: 48mm;\s+padding: 3mm 5mm 8mm 1mm/, '58 mm: à esquerda, folga à direita, nunca maior que a página');
+  assert.match(h58, /width: 100%; max-width: 58mm;\s+padding: 3mm 10mm 8mm 5mm/, '58 mm medido na KP-IM607: 5 mm esq. / 10 mm dir. = 43 mm de texto, nunca maior que a página');
+  assert.match(h58, /font-family: "Courier New", "Liberation Mono"/, 'mesma fonte do teste de calibração');
   assert.doesNotMatch(h58, /@media/, 'sem media query: a largura não depende do driver');
   const h80 = montarNotinhaHtml(base, undefined, 80);
   assert.match(h80, /max-width: 72mm/, '80 mm: 72 mm úteis');
