@@ -122,7 +122,9 @@ export function contatoDoPedido(pedido: {
 export function linkWhatsApp(telefone: string, texto?: string): string {
   const digitos = telefone.replace(/\D/g, "");
   const numero = digitos.startsWith("55") ? digitos : `55${digitos}`;
-  return `https://wa.me/${numero}${texto ? `?text=${encodeURIComponent(texto)}` : ""}`;
+  // api.whatsapp.com/send em vez de wa.me: o redirecionamento do wa.me troca
+  // emojis e símbolos por "?" (U+FFFD); a URL direta preserva o UTF-8.
+  return `https://api.whatsapp.com/send?phone=${numero}${texto ? `&text=${encodeURIComponent(texto)}` : ""}`;
 }
 
 export function horaCurta(iso: string): string {

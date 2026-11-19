@@ -111,6 +111,14 @@ export interface Categoria {
   atualizadoEm?: string;
 }
 
+export interface Pao {
+  id: string;
+  nome: string;
+  precoAdicional: string;
+  ativo: boolean;
+  ordem: number;
+}
+
 export interface Ingrediente {
   id: string;
   nome: string;
@@ -140,6 +148,8 @@ export interface Produto {
   fotoUrl: string | null;
   disponivel: boolean;
   destaque?: boolean;
+  /** O cliente escolhe a variação do pão ao pedir. */
+  escolhePao?: boolean;
   ordem: number;
   categoriaId: string;
   categoria?: Categoria;
@@ -197,6 +207,7 @@ export interface ItemPedido {
   nomeProdutoSnapshot: string;
   varianteId: string | null;
   nomeVarianteSnapshot: string | null;
+  nomePaoSnapshot?: string | null;
   precoUnitario: string;
   quantidade: number;
   subtotal: string;
@@ -308,4 +319,29 @@ export interface Usuario {
   ativo: boolean;
   criadoEm: string;
   atualizadoEm: string;
+}
+
+export interface ClienteAdmin {
+  id: string;
+  nome: string;
+  telefone: string;
+  email: string | null;
+  ativo: boolean;
+  telefoneVerificado: boolean;
+  /** Só existe para telefone confirmado pelo WhatsApp. */
+  cashback: number | null;
+  totalPedidos: number;
+  criadoEm: string;
+}
+
+export interface ListaClientes {
+  data: ClienteAdmin[];
+  total: number;
+  pagina: number;
+  totalPaginas: number;
+}
+
+export interface ResetSenhaGerado {
+  token: string;
+  expiraEm: string;
 }

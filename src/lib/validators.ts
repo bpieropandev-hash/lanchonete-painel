@@ -37,6 +37,13 @@ export const ingredienteSchema = z.object({
 });
 export type IngredienteInput = z.infer<typeof ingredienteSchema>;
 
+export const paoSchema = z.object({
+  nome: z.string().min(2, "Mínimo 2 caracteres"),
+  precoAdicional: z.number().nonnegative("Preço inválido"),
+  ordem: z.number().int("Use um número inteiro"),
+});
+export type PaoInput = z.infer<typeof paoSchema>;
+
 export const entregadorSchema = z.object({
   nome: z.string().min(2, "Mínimo 2 caracteres"),
   telefone: z

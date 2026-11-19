@@ -15,14 +15,16 @@ import { api } from "@/lib/api";
 import { formatBRL, resolveImageUrl } from "@/lib/format";
 import { useAuthStore } from "@/store/authStore";
 import { useToastStore } from "@/store/toastStore";
-import type { Categoria, Ingrediente, Produto } from "@/types";
+import { PaoModal } from "@/components/cardapio/PaoModal";
+import type { Categoria, Ingrediente, Pao, Produto } from "@/types";
 
-type Tab = "produtos" | "categorias" | "ingredientes";
+type Tab = "produtos" | "categorias" | "ingredientes" | "paes";
 
 const TAB_LABEL: Record<Tab, string> = {
   produtos: "Produtos",
   categorias: "Categorias",
   ingredientes: "Ingredientes",
+  paes: "Pães",
 };
 
 function FotoProduto({
@@ -61,6 +63,9 @@ function CardapioContent() {
   const [categoriaOpen, setCategoriaOpen] = useState(false);
   const [ingredienteEdit, setIngredienteEdit] = useState<Ingrediente | null>(null);
   const [ingredienteOpen, setIngredienteOpen] = useState(false);
+  const [paes, setPaes] = useState<Pao[]>([]);
+  const [paoEdit, setPaoEdit] = useState<Pao | null>(null);
+  const [paoOpen, setPaoOpen] = useState(false);
 
   const { funcionario } = useAuthStore();
   const showToast = useToastStore((s) => s.show);
@@ -69,15 +74,17 @@ function CardapioContent() {
   const loadAll = useCallback(async () => {
     setLoading(true);
     try {
-      const [prods, cats, ings] = await Promise.all([
+      const [prods, cats, ings, paesRes] = await Promise.all([
         api.get("/admin/cardapio/produtos"),
         api.get("/admin/cardapio/categorias"),
         api.get("/admin/cardapio/ingredientes"),
+        api.get("/admin/cardapio/paes"),
       ]);
       const toArr = (d: unknown) => (Array.isArray(d) ? d : []);
       setProdutos(toArr(prods.data));
       setCategorias(toArr(cats.data));
       setIngredientes(toArr(ings.data));
+      setPaes(toArr(paesRes.data));
     } catch {
       showToast("Não foi possível carregar o cardápio.", "error");
     } finally {
@@ -122,6 +129,20 @@ function CardapioContent() {
     }
   };
 
+  const togglePaoAtivo = async (p: Pao) => {
+    try {
+      await api.patch(`/admin/cardapio/paes/${p.id}/toggle-ativo`);
+      setPaes((prev) => prev.map((x) => (x.id === p.id ? { ...x, ativo: !x.ativo } : x)));
+    } catch {
+      showToast("Não foi possível alterar o pão.", "error");
+    }
+  };
+
+  const editarPao = (p: Pao) => {
+    setPaoEdit(p);
+    setPaoOpen(true);
+  };
+
   const editarProduto = (p: Produto) => {
     setProdutoEdit(p);
     setProdutoOpen(true);
@@ -149,7 +170,7 @@ function CardapioContent() {
             role="tab"
             aria-selected={tab === t}
             onClick={() => setTab(t)}
-            className={`-mb-px shrink-0 whitespace-nowrap border-b-2 px-4 py-2 text-sm font-semibold transition-colors ${
+            className={`-mb-px shrink-0 whitespace-nowrap border-b-2 px-2.5 py-2.5 text-sm sm:px-4 font-semibold transition-colors ${
               tab === t
                 ? "border-primary-500 text-primary-700"
                 : "border-transparent text-gray-500 hover:text-gray-800"
@@ -488,6 +509,105 @@ function CardapioContent() {
               )}
             </div>
           )}
+          {tab === "paes" && (
+            <div>
+              {isAdmin && (
+                <div className="mb-3 flex sm:justify-end">
+                  <Button
+                    className="w-full sm:w-auto"
+                    leftIcon={<Plus size={16} />}
+                    onClick={() => {
+                      setPaoEdit(null);
+                      setPaoOpen(true);
+                    }}
+                  >
+                    Novo pão
+                  </Button>
+                </div>
+              )}
+
+              <p className="mb-3 text-sm text-gray-500">
+                Variações de pão que o cliente escolhe nos lanches marcados com &ldquo;Cliente escolhe o pão&rdquo;.
+                O pão não pode ser removido do lanche.
+              </p>
+
+              {paes.length === 0 && (
+                <div className="rounded-lg border border-gray-200 bg-white px-3 py-8 text-center text-sm text-gray-400 shadow-sm">
+                  Nenhum pão cadastrado. Sem pães ativos, o site não pergunta o pão.
+                </div>
+              )}
+
+              {paes.length > 0 && (
+                <ul className="divide-y divide-gray-100 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm md:hidden">
+                  {paes.map((p) => (
+                    <li key={p.id} className="p-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="break-words font-medium text-gray-900">{p.nome}</p>
+                          <p className="text-xs text-gray-500">
+                            {Number(p.precoAdicional) > 0
+                              ? `+ ${formatBRL(p.precoAdicional)}`
+                              : "Sem acréscimo"}
+                          </p>
+                        </div>
+                        <StatusBadge ativo={p.ativo} rotuloAtivo="Ativo" rotuloInativo="Inativo" />
+                      </div>
+                      {isAdmin && (
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          <AcoesLinha
+                            rotulos
+                            ativo={p.ativo}
+                            onEditar={() => editarPao(p)}
+                            onToggle={() => togglePaoAtivo(p)}
+                          />
+                        </div>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              {paes.length > 0 && (
+                <div className="hidden overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm md:block">
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-50 text-left text-xs uppercase text-gray-500">
+                      <tr>
+                        <th className="px-3 py-2">Nome</th>
+                        <th className="px-3 py-2">Preço adicional</th>
+                        <th className="px-3 py-2">Ordem</th>
+                        <th className="px-3 py-2">Status</th>
+                        <th className="px-3 py-2 text-right">Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {paes.map((p) => (
+                        <tr key={p.id} className="hover:bg-gray-50">
+                          <td className="px-3 py-2 font-medium text-gray-900">{p.nome}</td>
+                          <td className="px-3 py-2 text-gray-600">{formatBRL(p.precoAdicional)}</td>
+                          <td className="px-3 py-2 text-gray-600">{p.ordem}</td>
+                          <td className="px-3 py-2">
+                            <StatusBadge ativo={p.ativo} rotuloAtivo="Ativo" rotuloInativo="Inativo" />
+                          </td>
+                          <td className="px-3 py-2 text-right">
+                            <div className="flex justify-end gap-1">
+                              {isAdmin && (
+                                <AcoesLinha
+                                  ativo={p.ativo}
+                                  onEditar={() => editarPao(p)}
+                                  onToggle={() => togglePaoAtivo(p)}
+                                />
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+
         </>
       )}
 
@@ -510,6 +630,12 @@ function CardapioContent() {
         onClose={() => setCategoriaOpen(false)}
         onSaved={loadAll}
         categoria={categoriaEdit}
+      />
+      <PaoModal
+        open={paoOpen}
+        onClose={() => setPaoOpen(false)}
+        onSaved={loadAll}
+        pao={paoEdit}
       />
       <IngredienteModal
         open={ingredienteOpen}

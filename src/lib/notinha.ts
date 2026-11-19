@@ -90,6 +90,8 @@ export function montarNotinhaHtml(
           formatBRL(item.precoUnitario)
         )}</span><span>${esc(formatBRL(item.subtotal))}</span></div>`,
       ];
+      if (item.nomePaoSnapshot)
+        linhas.push(`<div class="det">PÃO: ${esc(item.nomePaoSnapshot)}</div>`);
       if (p?.removidos?.length)
         linhas.push(`<div class="det">SEM: ${esc(p.removidos.join(", "))}</div>`);
       if (p?.adicionados?.length)

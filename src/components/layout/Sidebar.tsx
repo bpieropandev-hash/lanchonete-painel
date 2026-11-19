@@ -16,6 +16,8 @@ import {
   KeyRound,
   Palette,
   Boxes,
+  History,
+  Contact,
 } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import { useNotificacaoStore } from "@/store/notificacaoStore";
@@ -48,6 +50,13 @@ const items: NavItem[] = [
     profiles: ["ADMIN", "ATENDENTE"],
     grupo: "operacao",
     badge: true,
+  },
+  {
+    href: "/historico",
+    label: "Histórico",
+    icon: History,
+    profiles: ["ADMIN", "ATENDENTE"],
+    grupo: "operacao",
   },
   {
     href: "/chapeiro",
@@ -98,6 +107,13 @@ const items: NavItem[] = [
     icon: DollarSign,
     profiles: ["ADMIN", "ATENDENTE"],
     grupo: "operacao",
+  },
+  {
+    href: "/clientes",
+    label: "Clientes",
+    icon: Contact,
+    profiles: ["ADMIN", "ATENDENTE"],
+    grupo: "gestao",
   },
   {
     href: "/usuarios",
