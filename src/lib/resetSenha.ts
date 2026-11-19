@@ -1,10 +1,20 @@
 import { NOME_LOJA } from "@/lib/marca";
 
-const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || "").replace(/\/+$/, "");
+/** Endereço do site do cliente, lido do servidor (/api/config). Vazio = não configurado. */
+export async function buscarSiteUrl(): Promise<string> {
+  try {
+    const res = await fetch("/api/config", { cache: "no-store" });
+    if (!res.ok) return "";
+    const data = (await res.json()) as { siteUrl?: string };
+    return typeof data.siteUrl === "string" ? data.siteUrl : "";
+  } catch {
+    return "";
+  }
+}
 
 /** Link da página de redefinição no site. O token vai no fragmento: não chega a logs nem ao Referer. */
-export function linkRedefinirSenha(token: string): string {
-  return `${SITE_URL}/redefinir-senha#token=${encodeURIComponent(token)}`;
+export function linkRedefinirSenha(siteUrl: string, token: string): string {
+  return `${siteUrl}/redefinir-senha#token=${encodeURIComponent(token)}`;
 }
 
 export function mensagemRedefinirSenha(nome: string, link: string, expiraEm: string): string {
@@ -14,6 +24,3 @@ export function mensagemRedefinirSenha(nome: string, link: string, expiraEm: str
     `(vale até ${hora}, uso único):\n${link}`
   );
 }
-
-/** Sem NEXT_PUBLIC_SITE_URL o link sairia relativo e não funcionaria no celular do cliente. */
-export const siteUrlConfigurada = SITE_URL !== "";
