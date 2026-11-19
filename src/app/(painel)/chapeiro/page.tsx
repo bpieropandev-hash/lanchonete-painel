@@ -399,6 +399,9 @@ function ChapeiroPageContent() {
                               <span className="font-normal text-zinc-400"> · {item.nomeVarianteSnapshot}</span>
                             )}
                           </p>
+                          {item.nomePaoSnapshot && (
+                            <p className="text-xs text-zinc-400">Pão: {item.nomePaoSnapshot}</p>
+                          )}
                           {item.personalizacoes && (
                             <div className="mt-1 space-y-0.5 text-base">
                               {item.personalizacoes.removidos.length > 0 && (

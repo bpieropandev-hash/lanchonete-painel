@@ -398,6 +398,9 @@ function PedidoDetalheContent({
                         </span>
                       )}
                     </p>
+                    {item.nomePaoSnapshot && (
+                      <p className="text-xs text-gray-600">Pão: {item.nomePaoSnapshot}</p>
+                    )}
                     <p className="text-sm font-semibold text-gray-700">
                       {formatBRL(item.subtotal)}
                     </p>

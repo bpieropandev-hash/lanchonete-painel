@@ -54,6 +54,7 @@ export function ProdutoModal({
   const [selectedExtras, setSelectedExtras] = useState<string[]>([]);
   const [variantes, setVariantes] = useState<VarianteRow[]>([]);
   const [destaque, setDestaque] = useState(false);
+  const [escolhePao, setEscolhePao] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const showToast = useToastStore((s) => s.show);
   const estoqueHabilitado = useEstoqueStore((s) => !!s.config?.habilitado);
@@ -77,6 +78,12 @@ export function ProdutoModal({
   );
   const isBebida = categoriaSelecionada?.tipo === "BEBIDA";
 
+  // Produto novo: lanche já vem com a escolha do pão ligada.
+  const tipoSelecionado = categoriaSelecionada?.tipo;
+  useEffect(() => {
+    if (open && !produto) setEscolhePao(tipoSelecionado === "LANCHE");
+  }, [open, produto, tipoSelecionado]);
+
   useEffect(() => {
     if (open) {
       reset({
@@ -88,6 +95,10 @@ export function ProdutoModal({
         ordem: produto?.ordem || 0,
       });
       setDestaque(produto?.destaque ?? false);
+      setEscolhePao(
+        produto?.escolhePao ??
+          categorias.find((c) => c.id === (produto?.categoriaId || categorias[0]?.id))?.tipo === "LANCHE"
+      );
       // A API devolve os vínculos em produtoIngredientes (antes lia-se um campo
       // inexistente e salvar o produto apagava todos os ingredientes).
       const vinculos = produto?.produtoIngredientes ?? [];
@@ -219,6 +230,7 @@ export function ProdutoModal({
         ...data,
         fotoUrl: data.fotoUrl || undefined,
         destaque,
+        escolhePao,
       };
       let savedId: string;
       if (produto) {
@@ -323,6 +335,21 @@ export function ProdutoModal({
             Mostrar em &ldquo;Mais pedidos&rdquo; no site
             <span className="block text-xs text-gray-500">
               Os destaques aparecem primeiro; o restante da lista vem dos mais vendidos.
+            </span>
+          </span>
+        </label>
+
+        <label className="flex items-start gap-2 text-sm text-gray-700">
+          <input
+            type="checkbox"
+            checked={escolhePao}
+            onChange={(e) => setEscolhePao(e.target.checked)}
+            className="mt-0.5 h-4 w-4 rounded border-gray-300"
+          />
+          <span>
+            Cliente escolhe o pão
+            <span className="block text-xs text-gray-500">
+              O site pergunta o pão (cadastrado na aba Pães) antes da personalização. O pão não pode ser removido.
             </span>
           </span>
         </label>
