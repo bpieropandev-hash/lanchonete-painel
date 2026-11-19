@@ -6,11 +6,7 @@ import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
 import { api } from "@/lib/api";
 import { linkWhatsApp, formatTelefone } from "@/lib/format";
-import {
-  linkRedefinirSenha,
-  mensagemRedefinirSenha,
-  siteUrlConfigurada,
-} from "@/lib/resetSenha";
+import { buscarSiteUrl, linkRedefinirSenha, mensagemRedefinirSenha } from "@/lib/resetSenha";
 import { useToastStore } from "@/store/toastStore";
 import type { ClienteAdmin, ResetSenhaGerado } from "@/types";
 
@@ -27,6 +23,7 @@ export function ResetSenhaModal({ cliente, onClose }: Props) {
   const [gerado, setGerado] = useState<ResetSenhaGerado | null>(null);
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
+  const [siteUrl, setSiteUrl] = useState<string | null>(null);
   const showToast = useToastStore((s) => s.show);
 
   useEffect(() => {
@@ -35,12 +32,22 @@ export function ResetSenhaModal({ cliente, onClose }: Props) {
     setLoading(false);
   }, [cliente?.id]);
 
+  useEffect(() => {
+    let ativo = true;
+    buscarSiteUrl().then((url) => ativo && setSiteUrl(url));
+    return () => {
+      ativo = false;
+    };
+  }, []);
+
   if (!cliente) return null;
 
   const gerar = async () => {
     setLoading(true);
     setErro(null);
     try {
+      // Se a busca inicial falhou, tenta de novo antes de montar o link.
+      if (!siteUrl) setSiteUrl(await buscarSiteUrl());
       const { data } = await api.post<ResetSenhaGerado>(
         `/admin/clientes/${cliente.id}/reset-senha`
       );
@@ -52,7 +59,7 @@ export function ResetSenhaModal({ cliente, onClose }: Props) {
     }
   };
 
-  const link = gerado ? linkRedefinirSenha(gerado.token) : "";
+  const link = gerado ? linkRedefinirSenha(siteUrl ?? "", gerado.token) : "";
   const mensagem = gerado
     ? mensagemRedefinirSenha(cliente.nome, link, gerado.expiraEm)
     : "";
@@ -104,9 +111,10 @@ export function ResetSenhaModal({ cliente, onClose }: Props) {
 
       {gerado && (
         <div className="mt-3 space-y-3">
-          {!siteUrlConfigurada && (
+          {!siteUrl && (
             <p role="alert" className="rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-800">
-              NEXT_PUBLIC_SITE_URL não está configurada: o link abaixo não tem o endereço do site.
+              O endereço do site não está configurado (variável SITE_URL no servidor do painel):
+              o link abaixo não tem o endereço do site.
             </p>
           )}
           <label className="block text-sm font-medium text-gray-700" htmlFor="link-reset">
