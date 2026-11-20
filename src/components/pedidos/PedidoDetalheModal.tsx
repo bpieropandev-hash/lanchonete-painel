@@ -11,10 +11,11 @@ import {
   Bell,
   MessageCircle,
   Printer,
+  Trash2,
 } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
-import { Textarea } from "@/components/ui/Input";
+import { Input, Textarea } from "@/components/ui/Input";
 import { EntregadorDoPedido } from "@/components/pedidos/EntregadorDoPedido";
 import { api } from "@/lib/api";
 import {
@@ -27,6 +28,7 @@ import {
   tipoPagamentoLabel,
 } from "@/lib/format";
 import { imprimirNotinha } from "@/lib/notinha";
+import { useAuthStore } from "@/store/authStore";
 import { useMarcaStore } from "@/store/marcaStore";
 import { useToastStore } from "@/store/toastStore";
 import type { Pedido, StatusPedido, TipoEntrega } from "@/types";
@@ -37,6 +39,8 @@ interface PedidoDetalheModalProps {
   pedidoId: string | null;
   onClose: () => void;
   onUpdated: (pedido: Pedido) => void;
+  /** Quando informado, o ADMIN pode excluir pedidos finalizados (ex.: testes). */
+  onDeleted?: (pedidoId: string) => void;
 }
 
 type Acao = { status: StatusPedido; label: string; icon: typeof ChefHat };
@@ -77,6 +81,7 @@ function PedidoDetalheContent({
   pedidoId,
   onClose,
   onUpdated,
+  onDeleted,
 }: PedidoDetalheModalProps) {
   const alive = useRef(false);
   const sequence = useRef(0);
@@ -86,6 +91,9 @@ function PedidoDetalheContent({
   const [acting, setActing] = useState(false);
   const [showCancel, setShowCancel] = useState(false);
   const [motivoCancelamento, setMotivoCancelamento] = useState("");
+  const [showDelete, setShowDelete] = useState(false);
+  const [confirmacaoNumero, setConfirmacaoNumero] = useState("");
+  const isAdmin = useAuthStore((s) => s.funcionario?.perfil === "ADMIN");
   const showToast = useToastStore((s) => s.show);
   const nomeLoja = useMarcaStore((s) => s.nome);
   const enderecoLoja = useMarcaStore((s) => s.enderecoLoja);
@@ -190,6 +198,79 @@ function PedidoDetalheContent({
     }
   };
 
+  const handleExcluir = async () => {
+    if (!open || !alive.current || acting || !pedido || pedido.id !== pedidoId || !onDeleted) return;
+    if (confirmacaoNumero.trim() !== String(pedido.numero)) {
+      showToast("Digite o número do pedido para confirmar", "error");
+      return;
+    }
+    setActing(true);
+    try {
+      await api.delete(`/admin/pedidos/${pedido.id}`);
+      if (!alive.current) return;
+      showToast(`Pedido #${pedido.numero} excluído`, "success");
+      onDeleted(pedido.id);
+      onClose();
+    } catch (err) {
+      if (!alive.current) return;
+      showToast(mensagemErro(err, "Não foi possível excluir o pedido."), "error");
+    } finally {
+      if (alive.current) setActing(false);
+    }
+  };
+
+  const finalizado = pedido?.status === "ENTREGUE" || pedido?.status === "CANCELADO";
+  const podeExcluir = !!pedido && finalizado && isAdmin && !!onDeleted;
+
+  const rodapeExcluir = !podeExcluir ? null : showDelete ? (
+    <div className="flex flex-col gap-2">
+      <p className="text-sm text-red-800">
+        Exclui o pedido <strong>#{pedido.numero}</strong> de vez: ele some do histórico e do caixa
+        do dia. <strong>Não dá para desfazer.</strong> Use só para pedidos de teste ou lançados por
+        engano.
+      </p>
+      <Input
+        label={`Digite ${pedido.numero} para confirmar`}
+        name="confirmacaoNumero"
+        inputMode="numeric"
+        autoComplete="off"
+        value={confirmacaoNumero}
+        onChange={(e) => setConfirmacaoNumero(e.target.value)}
+      />
+      <div className="flex gap-2">
+        <Button
+          variant="secondary"
+          onClick={() => {
+            setShowDelete(false);
+            setConfirmacaoNumero("");
+          }}
+          disabled={acting}
+        >
+          Voltar
+        </Button>
+        <Button
+          variant="danger"
+          onClick={handleExcluir}
+          loading={acting}
+          disabled={confirmacaoNumero.trim() !== String(pedido.numero)}
+          fullWidth
+          leftIcon={<Trash2 size={16} />}
+        >
+          Excluir definitivamente
+        </Button>
+      </div>
+    </div>
+  ) : (
+    <Button
+      variant="danger"
+      onClick={() => setShowDelete(true)}
+      disabled={acting}
+      leftIcon={<Trash2 size={16} />}
+    >
+      Excluir pedido
+    </Button>
+  );
+
   const action = pedido ? proximaAcao(pedido) : null;
   const ActionIcon = action?.icon;
 
@@ -250,7 +331,9 @@ function PedidoDetalheContent({
               )}
             </div>
           )
-        ) : null
+        ) : (
+          rodapeExcluir
+        )
       }
     >
       {erro ? (

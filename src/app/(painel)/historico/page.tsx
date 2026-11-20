@@ -102,6 +102,11 @@ function HistoricoContent() {
     setPagina(1);
   };
 
+  const removerDaLista = (id: string) => {
+    setPedidos((prev) => prev.filter((p) => p.id !== id));
+    setTotal((t) => Math.max(0, t - 1));
+  };
+
   const atualizarNaLista = (atualizado: Pedido) =>
     setPedidos((prev) => prev.map((p) => (p.id === atualizado.id ? { ...p, ...atualizado } : p)));
 
@@ -312,6 +317,7 @@ function HistoricoContent() {
         pedidoId={selectedId}
         onClose={() => setSelectedId(null)}
         onUpdated={atualizarNaLista}
+        onDeleted={removerDaLista}
       />
     </div>
   );
